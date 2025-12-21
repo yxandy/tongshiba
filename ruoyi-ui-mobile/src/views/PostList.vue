@@ -116,8 +116,7 @@ function onMenuSelect(action) {
   if (action.value === 'followed') {
     router.push('/followed')
   } else if (action.value === 'myPosts') {
-    // 暂未实现
-    // router.push('/my-posts')
+    router.push('/my-posts')
   }
 }
 

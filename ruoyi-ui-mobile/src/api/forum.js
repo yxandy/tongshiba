@@ -96,3 +96,12 @@ export function getFollowedPosts(wxUserid, params) {
         params: { wxUserid, ...params }
     })
 }
+
+// 获取用户发过的帖子列表
+export function getMyPosts(userId, params) {
+    return request({
+        url: '/mobile/forum/post/list',
+        method: 'get',
+        params: { userId, ...params }
+    })
+}

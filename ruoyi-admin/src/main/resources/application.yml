@@ -68,13 +68,13 @@ spring:
   # redis 配置
   redis:
     # 地址
-    host: localhost
+    host: 10.166.135.164
     # 端口，默认为6379
-    port: 6379
+    port: 11004
     # 数据库索引
-    database: 0
+    database: 21
     # 密码
-    password:
+    password: Sdhs!@34
     # 连接超时时间
     timeout: 10s
     lettuce:

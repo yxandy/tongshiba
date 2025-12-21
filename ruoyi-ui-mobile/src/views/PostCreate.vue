@@ -8,6 +8,7 @@
         :border="false"
         class="title-input"
         maxlength="50"
+        @focus="showEmojiPicker = false"
       />
       <van-field
         v-model="content"
@@ -18,6 +19,7 @@
         autosize
         class="content-input"
         maxlength="2000"
+        @focus="showEmojiPicker = false"
       />
 
       <!-- 已选图片预览 -->
@@ -33,72 +35,81 @@
       </div>
     </div>
 
-    <!-- 底部工具栏 -->
-    <div class="toolbar" :style="{ paddingBottom: keyboardHeight + 'px' }">
-      <!-- 左侧工具组 -->
-      <div class="left-tools">
-        <!-- 关闭 -->
-        <div class="tool-icon close-btn" @click="goBack">
-          <van-icon name="cross" />
+    <!-- 底部功能区固定容器 -->
+    <div class="bottom-container">
+      <!-- 底部工具栏 -->
+      <div class="toolbar">
+        <!-- 左侧工具组 -->
+        <div class="left-tools">
+          <!-- 关闭 -->
+          <div class="tool-icon close-btn" @click="goBack">
+            <van-icon name="cross" />
+          </div>
+          
+          <!-- 图片 -->
+          <div class="tool-icon" @click="selectImage">
+            <van-icon name="photo-o" />
+          </div>
+          
+          <!-- 表情 -->
+          <div class="tool-icon" @click="toggleEmojiPicker">
+            <van-icon :name="showEmojiPicker ? 'smile' : 'smile-o'" :color="showEmojiPicker ? '#1989fa' : ''" />
+          </div>
         </div>
-        
-        <!-- 分隔线 (可选，截图没看清，暂时用间隔) -->
-        
-        <!-- 图片 -->
-        <div class="tool-icon" @click="selectImage">
-          <van-icon name="photo-o" />
-        </div>
-        
-        <!-- 表情 -->
-        <div class="tool-icon" @click="showEmojiPicker = true">
-          <van-icon name="smile-o" />
+
+        <!-- 右侧发送 -->
+        <div 
+          class="send-btn" 
+          :class="{ active: canSubmit && !submitting, disabled: !canSubmit || submitting }"
+          @click="submitPost"
+        >
+          <van-icon v-if="submitting" name="loading" class="spinner" />
+          <van-icon v-else name="arrow-up" />
         </div>
       </div>
 
-      <!-- 右侧发送 -->
-      <div 
-        class="send-btn" 
-        :class="{ active: canSubmit && !submitting, disabled: !canSubmit || submitting }"
-        @click="submitPost"
-      >
-        <van-icon v-if="submitting" name="loading" class="spinner" />
-        <van-icon v-else name="arrow-up" />
+      <!-- 表情选择面板（内联式） -->
+      <div v-show="showEmojiPicker" class="emoji-picker-panel">
+        <div class="emoji-picker-content">
+          <!-- 最近使用 -->
+          <div v-if="recentEmojis.length > 0" class="emoji-section">
+            <div class="section-title">最近使用</div>
+            <div class="emoji-grid">
+              <div 
+                v-for="emoji in recentEmojis" 
+                :key="'recent-' + emoji.id" 
+                class="emoji-item"
+                @click="insertEmoji(emoji)"
+              >
+                <img :src="emojiBasePath + emoji.file" :alt="emoji.name" />
+              </div>
+            </div>
+          </div>
+          <!-- 全部表情 -->
+          <div class="emoji-section">
+            <div class="section-title">全部</div>
+            <div class="emoji-grid">
+              <div 
+                v-for="emoji in emojiList" 
+                :key="emoji.id" 
+                class="emoji-item"
+                @click="insertEmoji(emoji)"
+              >
+                <img :src="emojiBasePath + emoji.file" :alt="emoji.name" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 删除按钮 -->
+        <div class="emoji-actions">
+          <div class="action-btn delete-btn" @click="deleteEmojiOrChar">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display: block;">
+            <path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/>
+          </svg>
+        </div>
+        </div>
       </div>
     </div>
-
-    <!-- 表情选择器 -->
-    <van-popup v-model:show="showEmojiPicker" position="bottom" round>
-      <div class="emoji-picker">
-        <!-- 最近使用 -->
-        <div v-if="recentEmojis.length > 0" class="emoji-section">
-          <div class="section-title">最近使用</div>
-          <div class="emoji-grid">
-            <div 
-              v-for="emoji in recentEmojis" 
-              :key="'recent-' + emoji.id" 
-              class="emoji-item"
-              @click="insertEmoji(emoji)"
-            >
-              <img :src="emojiBasePath + emoji.file" :alt="emoji.name" />
-            </div>
-          </div>
-        </div>
-        <!-- 全部表情 -->
-        <div class="emoji-section">
-          <div class="section-title">全部</div>
-          <div class="emoji-grid">
-            <div 
-              v-for="emoji in emojiList" 
-              :key="emoji.id" 
-              class="emoji-item"
-              @click="insertEmoji(emoji)"
-            >
-              <img :src="emojiBasePath + emoji.file" :alt="emoji.name" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </van-popup>
 
     <!-- 隐藏的文件输入 -->
     <input 
@@ -218,12 +229,33 @@ function removeImage(index) {
   imageList.value.splice(index, 1)
 }
 
-// 插入表情（插入 [表情名] 格式，保存但不刷新UI）
+// 切换表情面板
+function toggleEmojiPicker() {
+  showEmojiPicker.value = !showEmojiPicker.value
+  if (showEmojiPicker.value) {
+    recentEmojis.value = getRecentEmojis()
+  }
+}
+
+// 插入表情（插入 [表情名] 格式，保持面板打开）
 function insertEmoji(emoji) {
   content.value += `[${emoji.name}]`
   // 保存到最近使用 (localStorage)，但不刷新UI列表
   addRecentEmoji(emoji)
-  showEmojiPicker.value = false
+  // 不关闭面板，方便连续选择
+}
+
+// 删除表情或字符（智能删除）
+function deleteEmojiOrChar() {
+  if (!content.value) return
+  
+  // 检查是否以 [表情名] 结尾
+  const emojiTagMatch = content.value.match(/\[[^\]]+\]$/)
+  if (emojiTagMatch) {
+    content.value = content.value.slice(0, -emojiTagMatch[0].length)
+  } else {
+    content.value = content.value.slice(0, -1)
+  }
 }
 
 // 提交帖子
@@ -350,22 +382,31 @@ async function submitPost() {
   border-radius: 50%;
 }
 
-/* 底部工具栏 */
-.toolbar {
+/* 底部工具栏容器 */
+.bottom-container {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 100;
+  background: var(--bg-color, #fff); /* 避免透视背景 */
+}
+
+/* 底部工具栏 */
+.toolbar {
   height: 50px;
   background: #f7f7f7; /* 浅灰底色 */
   border-top: 1px solid #e5e5e5;
   display: flex;
   align-items: center;
   padding: 0 16px;
-  z-index: 100;
+  /* 移除 position: fixed */
 }
 
 @media (prefers-color-scheme: dark) {
+  .bottom-container {
+     background: #191919;
+  }
   .toolbar {
     background: #2c2c2c;
     border-top: 1px solid #333;
@@ -452,9 +493,16 @@ async function submitPost() {
   to { transform: rotate(360deg); }
 }
 
-.emoji-picker {
+/* 表情选择面板 (内联式) */
+.emoji-picker-panel {
+  background: #1a1a1a;
+  border-top: 1px solid #333;
+  position: relative;
+}
+
+.emoji-picker-content {
   padding: 12px;
-  max-height: 350px;
+  max-height: 280px;
   overflow-y: auto;
 }
 
@@ -491,12 +539,43 @@ async function submitPost() {
 }
 
 .emoji-item:active {
-  background: #f0f0f0;
+  background: #333;
 }
 
-@media (prefers-color-scheme: dark) {
+/* 删除按钮区域 */
+.emoji-actions {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+}
+
+.action-btn {
+  width: 44px;
+  height: 36px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.action-btn .van-icon {
+  font-size: 20px;
+  color: #333;
+}
+
+.action-btn:active {
+  opacity: 0.7;
+}
+
+@media (prefers-color-scheme: light) {
+  .emoji-picker-panel {
+    background: #fff;
+    border-top: 1px solid #eee;
+  }
   .emoji-item:active {
-    background: #333;
+    background: #f0f0f0;
   }
 }
 </style>

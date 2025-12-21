@@ -135,7 +135,7 @@
               placeholder="发表评论..."
               class="native-textarea"
               ref="commentInputRef"
-              @focus="isFocused = true"
+              @focus="isFocused = true; showEmojiPicker = false"
               @blur="handleBlur"
             ></textarea>
           </div>
@@ -183,7 +183,9 @@
           <!-- 悬浮操作按钮 (删除/发送) -->
           <div class="emoji-actions">
             <div class="action-btn delete-btn" @click="deleteEmojiOrChar">
-               <van-icon name="cross" />
+               <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display: block;">
+                 <path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/>
+               </svg>
             </div>
             <div 
               class="action-btn send-btn" 
@@ -885,13 +887,12 @@ function formatTime(timeStr) {
 }
 
 .action-btn {
-  height: 40px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
+  background: #f5f5f5;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
 }
@@ -899,18 +900,19 @@ function formatTime(timeStr) {
 @media (prefers-color-scheme: dark) {
   .action-btn {
     background: #3a3a3a;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   }
 }
 
 /* 删除按钮 */
-.delete-btn {
+.action-btn.delete-btn {
   width: 44px;
-  color: #666;
+  color: #333;
 }
 
-.delete-btn .van-icon {
-  font-size: 20px;
+@media (prefers-color-scheme: dark) {
+  .action-btn.delete-btn {
+    color: #ccc;
+  }
 }
 
 /* 发送按钮 */

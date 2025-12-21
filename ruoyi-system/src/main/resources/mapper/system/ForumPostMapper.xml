@@ -14,6 +14,7 @@
         <result property="delFlag" column="del_flag" />
         <result property="createTime" column="create_time" />
         <result property="updateTime" column="update_time" />
+        <result property="lastReplyTime" column="last_reply_time" />
     </resultMap>
 
     <resultMap type="com.ruoyi.system.domain.ForumPost" id="ForumPostWithUserResult" extends="ForumPostResult">
@@ -32,7 +33,7 @@
     </sql>
 
     <sql id="selectForumPostWithUser">
-        select p.post_id, p.user_id, p.title, p.content, p.images, p.view_count, p.comment_count, p.is_locked, p.del_flag, p.create_time, p.update_time,
+        select p.post_id, p.user_id, p.title, p.content, p.images, p.view_count, p.comment_count, p.is_locked, p.del_flag, p.create_time, p.update_time, p.last_reply_time,
                u.user_id as u_user_id, u.wx_userid as u_wx_userid, u.nickname as u_nickname, u.avatar as u_avatar, u.department as u_department
         from forum_post p
         left join forum_user u on p.user_id = u.user_id
@@ -57,7 +58,20 @@
                 AND p.is_locked = #{isLocked}
             </if>
         </where>
-        order by p.create_time desc
+        order by COALESCE(p.last_reply_time, p.create_time) desc
+    </select>
+
+    <!-- 查询用户关注的帖子列表 -->
+    <select id="selectFollowedPostList" resultMap="ForumPostWithUserResult">
+        <include refid="selectForumPostWithUser"/>
+        <where>
+            p.del_flag = '0'
+            AND p.post_id IN
+            <foreach item="postId" collection="postIds" open="(" separator="," close=")">
+                #{postId}
+            </foreach>
+        </where>
+        order by COALESCE(p.last_reply_time, p.create_time) desc
     </select>
 
     <insert id="insertForumPost" parameterType="com.ruoyi.system.domain.ForumPost" useGeneratedKeys="true" keyProperty="postId">
@@ -120,6 +134,10 @@
 
     <update id="decrementCommentCount" parameterType="Long">
         update forum_post set comment_count = comment_count - 1 where post_id = #{postId} and comment_count > 0
+    </update>
+
+    <update id="updateLastReplyTime">
+        update forum_post set last_reply_time = #{lastReplyTime} where post_id = #{postId}
     </update>
 
 </mapper>

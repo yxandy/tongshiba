@@ -144,6 +144,89 @@ public class MobileForumController extends BaseController {
         return toAjax(forumCommentService.insertForumComment(comment));
     }
 
+    // ==================== 关注帖子相关接口 ====================
+
+    @Autowired
+    private com.ruoyi.system.mapper.ForumPostFollowMapper forumPostFollowMapper;
+
+    @Autowired
+    private com.ruoyi.system.mapper.ForumPostMapper forumPostMapper;
+
+    /**
+     * 关注帖子
+     */
+    @PostMapping("/post/follow")
+    public AjaxResult followPost(@RequestBody FollowRequest request) {
+        ForumUser user = forumUserService.selectForumUserByWxUserid(request.getWxUserid());
+        if (user == null) {
+            return error("用户不存在");
+        }
+
+        // 检查是否已关注
+        com.ruoyi.system.domain.ForumPostFollow existing = forumPostFollowMapper.selectByUserAndPost(user.getUserId(),
+                request.getPostId());
+        if (existing != null) {
+            return success("已关注");
+        }
+
+        com.ruoyi.system.domain.ForumPostFollow follow = new com.ruoyi.system.domain.ForumPostFollow();
+        follow.setUserId(user.getUserId());
+        follow.setPostId(request.getPostId());
+        forumPostFollowMapper.insertForumPostFollow(follow);
+        return success("关注成功");
+    }
+
+    /**
+     * 取消关注帖子
+     */
+    @PostMapping("/post/unfollow")
+    public AjaxResult unfollowPost(@RequestBody FollowRequest request) {
+        ForumUser user = forumUserService.selectForumUserByWxUserid(request.getWxUserid());
+        if (user == null) {
+            return error("用户不存在");
+        }
+
+        forumPostFollowMapper.deleteByUserAndPost(user.getUserId(), request.getPostId());
+        return success("取消关注成功");
+    }
+
+    /**
+     * 检查是否已关注帖子
+     */
+    @GetMapping("/post/follow/check/{postId}")
+    public AjaxResult checkFollow(@PathVariable Long postId, @RequestParam String wxUserid) {
+        ForumUser user = forumUserService.selectForumUserByWxUserid(wxUserid);
+        if (user == null) {
+            return success(false);
+        }
+
+        com.ruoyi.system.domain.ForumPostFollow follow = forumPostFollowMapper.selectByUserAndPost(user.getUserId(),
+                postId);
+        return success(follow != null);
+    }
+
+    /**
+     * 获取关注的帖子列表
+     */
+    @GetMapping("/post/follow/list")
+    public TableDataInfo listFollowedPosts(@RequestParam String wxUserid) {
+        ForumUser user = forumUserService.selectForumUserByWxUserid(wxUserid);
+        if (user == null) {
+            return getDataTable(java.util.Collections.emptyList());
+        }
+
+        // 获取关注的帖子ID列表
+        java.util.List<Long> postIds = forumPostFollowMapper.selectFollowedPostIdsByUserId(user.getUserId());
+        if (postIds.isEmpty()) {
+            return getDataTable(java.util.Collections.emptyList());
+        }
+
+        // 分页查询帖子详情 (已过滤已删除帖子)
+        startPage();
+        java.util.List<ForumPost> posts = forumPostMapper.selectFollowedPostList(postIds);
+        return getDataTable(posts);
+    }
+
     // ==================== 请求参数类 ====================
 
     public static class UserSyncRequest {
@@ -251,6 +334,27 @@ public class MobileForumController extends BaseController {
 
         public void setContent(String content) {
             this.content = content;
+        }
+    }
+
+    public static class FollowRequest {
+        private String wxUserid;
+        private Long postId;
+
+        public String getWxUserid() {
+            return wxUserid;
+        }
+
+        public void setWxUserid(String wxUserid) {
+            this.wxUserid = wxUserid;
+        }
+
+        public Long getPostId() {
+            return postId;
+        }
+
+        public void setPostId(Long postId) {
+            this.postId = postId;
         }
     }
 }

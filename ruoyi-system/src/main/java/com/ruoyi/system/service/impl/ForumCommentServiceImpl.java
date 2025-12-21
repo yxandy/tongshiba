@@ -50,6 +50,9 @@ public class ForumCommentServiceImpl implements IForumCommentService {
         // 增加帖子评论数
         forumPostMapper.incrementCommentCount(forumComment.getPostId());
 
+        // 更新帖子最后回复时间
+        forumPostMapper.updateLastReplyTime(forumComment.getPostId(), new java.util.Date());
+
         return result;
     }
 

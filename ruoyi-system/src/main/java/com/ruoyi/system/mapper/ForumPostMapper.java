@@ -53,4 +53,15 @@ public interface ForumPostMapper {
      * 减少评论数量
      */
     public int decrementCommentCount(Long postId);
+
+    /**
+     * 查询用户关注的帖子列表
+     */
+    public List<ForumPost> selectFollowedPostList(@org.apache.ibatis.annotations.Param("postIds") List<Long> postIds);
+
+    /**
+     * 更新帖子最后回复时间
+     */
+    public int updateLastReplyTime(@org.apache.ibatis.annotations.Param("postId") Long postId,
+            @org.apache.ibatis.annotations.Param("lastReplyTime") java.util.Date lastReplyTime);
 }

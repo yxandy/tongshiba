@@ -8,8 +8,21 @@
 
     <!-- 正常内容 -->
     <template v-else>
-      <!-- 顶部导航 -->
-      <van-nav-bar title="同事吧" fixed placeholder />
+      <!-- 顶部导航 (移除标题，添加右侧菜单) -->
+      <van-nav-bar fixed placeholder>
+        <template #right>
+          <van-popover 
+            v-model:show="showMenu" 
+            :actions="menuActions" 
+            @select="onMenuSelect"
+            placement="bottom-end"
+          >
+            <template #reference>
+              <van-icon name="ellipsis" size="22" />
+            </template>
+          </van-popover>
+        </template>
+      </van-nav-bar>
 
       <!-- 下拉刷新 + 帖子列表 -->
       <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
@@ -90,6 +103,23 @@ const finished = ref(false)
 const refreshing = ref(false)
 const pageNum = ref(1)
 const pageSize = ref(10)
+
+// 菜单
+const showMenu = ref(false)
+const menuActions = [
+  { text: '关注的帖子', value: 'followed' },
+  { text: '发过的帖子', value: 'myPosts' }
+]
+
+function onMenuSelect(action) {
+  showMenu.value = false
+  if (action.value === 'followed') {
+    router.push('/followed')
+  } else if (action.value === 'myPosts') {
+    // 暂未实现
+    // router.push('/my-posts')
+  }
+}
 
 // 检查环境
 onMounted(async () => {

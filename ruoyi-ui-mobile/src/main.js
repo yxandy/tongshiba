@@ -11,6 +11,7 @@ import {
     NavBar,
     Field,
     Popup,
+    Popover,
     Loading,
     PullRefresh,
     Toast,
@@ -25,7 +26,8 @@ const routes = [
     { path: '/', redirect: '/posts' },
     { path: '/posts', name: 'PostList', component: () => import('./views/PostList.vue') },
     { path: '/post/:id', name: 'PostDetail', component: () => import('./views/PostDetail.vue') },
-    { path: '/post/create', name: 'PostCreate', component: () => import('./views/PostCreate.vue') }
+    { path: '/post/create', name: 'PostCreate', component: () => import('./views/PostCreate.vue') },
+    { path: '/followed', name: 'FollowedPosts', component: () => import('./views/FollowedPosts.vue') }
 ]
 
 const router = createRouter({
@@ -50,6 +52,7 @@ app.use(PullRefresh)
 app.use(Toast)
 app.use(Dialog)
 app.use(ActionSheet)
+app.use(Popover)
 
 app.use(router)
 app.mount('#app')

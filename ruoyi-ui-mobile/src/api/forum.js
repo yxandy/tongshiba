@@ -60,3 +60,39 @@ export function createComment(data) {
         data
     })
 }
+
+// 关注帖子
+export function followPost(data) {
+    return request({
+        url: '/mobile/forum/post/follow',
+        method: 'post',
+        data
+    })
+}
+
+// 取消关注帖子
+export function unfollowPost(data) {
+    return request({
+        url: '/mobile/forum/post/unfollow',
+        method: 'post',
+        data
+    })
+}
+
+// 检查是否已关注帖子
+export function checkFollow(postId, wxUserid) {
+    return request({
+        url: `/mobile/forum/post/follow/check/${postId}`,
+        method: 'get',
+        params: { wxUserid }
+    })
+}
+
+// 获取关注的帖子列表
+export function getFollowedPosts(wxUserid, params) {
+    return request({
+        url: '/mobile/forum/post/follow/list',
+        method: 'get',
+        params: { wxUserid, ...params }
+    })
+}

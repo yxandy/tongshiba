@@ -42,6 +42,9 @@ public class ForumPost extends BaseEntity {
     /** 删除标志（0存在 1删除） */
     private String delFlag;
 
+    /** 最后回复时间 */
+    private java.util.Date lastReplyTime;
+
     /** 发帖用户信息（非数据库字段） */
     private ForumUser user;
 
@@ -123,6 +126,14 @@ public class ForumPost extends BaseEntity {
 
     public void setUser(ForumUser user) {
         this.user = user;
+    }
+
+    public java.util.Date getLastReplyTime() {
+        return lastReplyTime;
+    }
+
+    public void setLastReplyTime(java.util.Date lastReplyTime) {
+        this.lastReplyTime = lastReplyTime;
     }
 
     @Override

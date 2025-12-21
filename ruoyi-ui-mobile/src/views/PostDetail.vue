@@ -67,9 +67,13 @@
              </div>
           </div>
           <div class="stats-right">
-             <div class="stat-item star-btn">
-               <van-icon name="star-o" />
-               <span>关注</span>
+             <div 
+               class="stat-item star-btn" 
+               :class="{ 'followed': isFollowed }"
+               @click="toggleFollow"
+             >
+               <van-icon :name="isFollowed ? 'star' : 'star-o'" :color="isFollowed ? '#ffc107' : ''" />
+               <span>{{ isFollowed ? '已关注' : '关注' }}</span>
              </div>
           </div>
         </div>
@@ -199,7 +203,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showImagePreview } from 'vant'
-import { getPostDetail, getCommentList, createComment, syncUser } from '@/api/forum'
+import { getPostDetail, getCommentList, createComment, syncUser, checkFollow, followPost, unfollowPost } from '@/api/forum'
 import { isWxWorkEnv, getAccessDeniedMessage, shareToUsers, getMockUser } from '@/utils/wxwork'
 import { emojiList, emojiBasePath, renderEmojis, getRecentEmojis, addRecentEmoji } from '@/config/emojis'
 
@@ -214,6 +218,7 @@ const post = ref(null)
 const comments = ref([])
 const commentLoading = ref(false)
 const commentFinished = ref(false)
+const isFollowed = ref(false)
 const commentPageNum = ref(1)
 
 // const showCommentPopup = ref(false) // 移除旧变量
@@ -290,8 +295,46 @@ async function loadPost() {
     const res = await getPostDetail(route.params.id)
     post.value = res.data
     loadComments()
+    // 检查关注状态
+    loadFollowStatus()
   } catch (e) {
     showToast('加载失败')
+  }
+}
+
+// 检查用户是否已关注该帖子
+async function loadFollowStatus() {
+  const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
+  if (!user.wxUserid) return
+
+  try {
+    const res = await checkFollow(route.params.id, user.wxUserid)
+    isFollowed.value = res.data === true
+  } catch (e) {
+    console.error('检查关注状态失败', e)
+  }
+}
+
+// 关注/取消关注帖子
+async function toggleFollow() {
+  const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
+  if (!user.wxUserid) {
+    showToast('请先登录')
+    return
+  }
+
+  try {
+    if (isFollowed.value) {
+      await unfollowPost({ wxUserid: user.wxUserid, postId: post.value.postId })
+      isFollowed.value = false
+      showToast('已取消关注')
+    } else {
+      await followPost({ wxUserid: user.wxUserid, postId: post.value.postId })
+      isFollowed.value = true
+      showToast('关注成功')
+    }
+  } catch (e) {
+    showToast('操作失败')
   }
 }
 
@@ -573,6 +616,11 @@ function formatTime(timeStr) {
 
 .star-btn {
   color: #999;
+  cursor: pointer;
+}
+
+.star-btn.followed {
+  color: #ffc107;
 }
 
 

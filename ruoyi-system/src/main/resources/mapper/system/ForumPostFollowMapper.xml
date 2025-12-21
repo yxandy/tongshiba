@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ForumPostFollowMapper">
+
+    <resultMap type="ForumPostFollow" id="ForumPostFollowResult">
+        <id     property="followId"   column="follow_id"   />
+        <result property="userId"     column="user_id"     />
+        <result property="postId"     column="post_id"     />
+        <result property="createTime" column="create_time" />
+    </resultMap>
+
+    <insert id="insertForumPostFollow" parameterType="ForumPostFollow" useGeneratedKeys="true" keyProperty="followId">
+        INSERT INTO forum_post_follow (user_id, post_id, create_time)
+        VALUES (#{userId}, #{postId}, sysdate())
+    </insert>
+
+    <delete id="deleteByUserAndPost">
+        DELETE FROM forum_post_follow 
+        WHERE user_id = #{userId} AND post_id = #{postId}
+    </delete>
+
+    <select id="selectByUserAndPost" resultMap="ForumPostFollowResult">
+        SELECT follow_id, user_id, post_id, create_time
+        FROM forum_post_follow
+        WHERE user_id = #{userId} AND post_id = #{postId}
+    </select>
+
+    <select id="selectFollowedPostIdsByUserId" resultType="Long">
+        SELECT post_id 
+        FROM forum_post_follow 
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

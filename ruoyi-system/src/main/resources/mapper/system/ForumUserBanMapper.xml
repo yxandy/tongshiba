@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ForumUserBanMapper">
+
+    <resultMap type="com.ruoyi.system.domain.ForumUserBan" id="ForumUserBanResult">
+        <result property="banId" column="ban_id" />
+        <result property="userId" column="user_id" />
+        <result property="banDays" column="ban_days" />
+        <result property="banReason" column="ban_reason" />
+        <result property="operatorId" column="operator_id" />
+        <result property="createTime" column="create_time" />
+    </resultMap>
+
+    <resultMap type="com.ruoyi.system.domain.ForumUserBan" id="ForumUserBanWithUserResult" extends="ForumUserBanResult">
+        <association property="user" javaType="com.ruoyi.system.domain.ForumUser">
+            <result property="userId" column="u_user_id" />
+            <result property="nickname" column="u_nickname" />
+            <result property="avatar" column="u_avatar" />
+        </association>
+    </resultMap>
+
+    <sql id="selectForumUserBanVo">
+        select ban_id, user_id, ban_days, ban_reason, operator_id, create_time
+        from forum_user_ban
+    </sql>
+
+    <sql id="selectForumUserBanWithUser">
+        select b.ban_id, b.user_id, b.ban_days, b.ban_reason, b.operator_id, b.create_time,
+               u.user_id as u_user_id, u.nickname as u_nickname, u.avatar as u_avatar
+        from forum_user_ban b
+        left join forum_user u on b.user_id = u.user_id
+    </sql>
+
+    <select id="selectForumUserBanById" parameterType="Long" resultMap="ForumUserBanWithUserResult">
+        <include refid="selectForumUserBanWithUser"/>
+        where b.ban_id = #{banId}
+    </select>
+
+    <select id="selectForumUserBanList" parameterType="com.ruoyi.system.domain.ForumUserBan" resultMap="ForumUserBanWithUserResult">
+        <include refid="selectForumUserBanWithUser"/>
+        <where>
+            <if test="userId != null">
+                AND b.user_id = #{userId}
+            </if>
+        </where>
+        order by b.create_time desc
+    </select>
+
+    <select id="selectForumUserBanByUserId" parameterType="Long" resultMap="ForumUserBanWithUserResult">
+        <include refid="selectForumUserBanWithUser"/>
+        where b.user_id = #{userId}
+        order by b.create_time desc
+    </select>
+
+    <insert id="insertForumUserBan" parameterType="com.ruoyi.system.domain.ForumUserBan" useGeneratedKeys="true" keyProperty="banId">
+        insert into forum_user_ban (user_id, ban_days, ban_reason, operator_id, create_time)
+        values (#{userId}, #{banDays}, #{banReason}, #{operatorId}, sysdate())
+    </insert>
+
+    <delete id="deleteForumUserBanById" parameterType="Long">
+        delete from forum_user_ban where ban_id = #{banId}
+    </delete>
+
+</mapper>

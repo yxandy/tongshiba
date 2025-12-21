@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ForumUserMapper">
+
+    <resultMap type="com.ruoyi.system.domain.ForumUser" id="ForumUserResult">
+        <result property="userId" column="user_id" />
+        <result property="wxUserid" column="wx_userid" />
+        <result property="nickname" column="nickname" />
+        <result property="avatar" column="avatar" />
+        <result property="department" column="department" />
+        <result property="status" column="status" />
+        <result property="banEndTime" column="ban_end_time" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <sql id="selectForumUserVo">
+        select user_id, wx_userid, nickname, avatar, department, status, ban_end_time, create_time, update_time
+        from forum_user
+    </sql>
+
+    <select id="selectForumUserById" parameterType="Long" resultMap="ForumUserResult">
+        <include refid="selectForumUserVo"/>
+        where user_id = #{userId}
+    </select>
+
+    <select id="selectForumUserByWxUserid" parameterType="String" resultMap="ForumUserResult">
+        <include refid="selectForumUserVo"/>
+        where wx_userid = #{wxUserid}
+    </select>
+
+    <select id="selectForumUserList" parameterType="com.ruoyi.system.domain.ForumUser" resultMap="ForumUserResult">
+        <include refid="selectForumUserVo"/>
+        <where>
+            <if test="wxUserid != null and wxUserid != ''">
+                AND wx_userid like concat('%', #{wxUserid}, '%')
+            </if>
+            <if test="nickname != null and nickname != ''">
+                AND nickname like concat('%', #{nickname}, '%')
+            </if>
+            <if test="department != null and department != ''">
+                AND department like concat('%', #{department}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <insert id="insertForumUser" parameterType="com.ruoyi.system.domain.ForumUser" useGeneratedKeys="true" keyProperty="userId">
+        insert into forum_user
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="wxUserid != null and wxUserid != ''">wx_userid,</if>
+            <if test="nickname != null">nickname,</if>
+            <if test="avatar != null">avatar,</if>
+            <if test="department != null">department,</if>
+            <if test="status != null">status,</if>
+            <if test="banEndTime != null">ban_end_time,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="wxUserid != null and wxUserid != ''">#{wxUserid},</if>
+            <if test="nickname != null">#{nickname},</if>
+            <if test="avatar != null">#{avatar},</if>
+            <if test="department != null">#{department},</if>
+            <if test="status != null">#{status},</if>
+            <if test="banEndTime != null">#{banEndTime},</if>
+            sysdate()
+        </trim>
+    </insert>
+
+    <update id="updateForumUser" parameterType="com.ruoyi.system.domain.ForumUser">
+        update forum_user
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="wxUserid != null and wxUserid != ''">wx_userid = #{wxUserid},</if>
+            <if test="nickname != null">nickname = #{nickname},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="department != null">department = #{department},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="banEndTime != null">ban_end_time = #{banEndTime},</if>
+            update_time = sysdate()
+        </trim>
+        where user_id = #{userId}
+    </update>
+
+    <delete id="deleteForumUserById" parameterType="Long">
+        delete from forum_user where user_id = #{userId}
+    </delete>
+
+    <delete id="deleteForumUserByIds" parameterType="String">
+        delete from forum_user where user_id in
+        <foreach item="userId" collection="array" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </delete>
+
+</mapper>

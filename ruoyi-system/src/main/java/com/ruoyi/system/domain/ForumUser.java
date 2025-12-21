@@ -39,6 +39,10 @@ public class ForumUser extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date banEndTime;
 
+    /** 是否管理员（0否 1是） */
+    @Excel(name = "是否管理员", readConverterExp = "0=否,1=是")
+    private String isAdmin;
+
     public Long getUserId() {
         return userId;
     }
@@ -93,6 +97,14 @@ public class ForumUser extends BaseEntity {
 
     public void setBanEndTime(Date banEndTime) {
         this.banEndTime = banEndTime;
+    }
+
+    public String getIsAdmin() {
+        return isAdmin;
+    }
+
+    public void setIsAdmin(String isAdmin) {
+        this.isAdmin = isAdmin;
     }
 
     @Override

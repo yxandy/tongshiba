@@ -104,6 +104,32 @@ public class MobileForumController extends BaseController {
     }
 
     /**
+     * 删除帖子 (作者或管理员可删除)
+     */
+    @PostMapping("/post/delete")
+    public AjaxResult deletePost(@RequestBody DeletePostRequest request) {
+        ForumUser user = forumUserService.selectForumUserByWxUserid(request.getWxUserid());
+        if (user == null) {
+            return error("用户不存在");
+        }
+
+        ForumPost post = forumPostService.selectForumPostById(request.getPostId());
+        if (post == null) {
+            return error("帖子不存在");
+        }
+
+        // 权限检查: 作者或管理员可删除
+        boolean isAuthor = user.getUserId().equals(post.getUserId());
+        boolean isAdmin = "1".equals(user.getIsAdmin());
+
+        if (!isAuthor && !isAdmin) {
+            return error("您没有权限删除此帖子");
+        }
+
+        return toAjax(forumPostService.deleteForumPostById(request.getPostId()));
+    }
+
+    /**
      * 获取帖子评论列表
      */
     @GetMapping("/comment/list/{postId}")
@@ -338,6 +364,27 @@ public class MobileForumController extends BaseController {
     }
 
     public static class FollowRequest {
+        private String wxUserid;
+        private Long postId;
+
+        public String getWxUserid() {
+            return wxUserid;
+        }
+
+        public void setWxUserid(String wxUserid) {
+            this.wxUserid = wxUserid;
+        }
+
+        public Long getPostId() {
+            return postId;
+        }
+
+        public void setPostId(Long postId) {
+            this.postId = postId;
+        }
+    }
+
+    public static class DeletePostRequest {
         private String wxUserid;
         private Long postId;
 

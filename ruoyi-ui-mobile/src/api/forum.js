@@ -105,3 +105,12 @@ export function getMyPosts(userId, params) {
         params: { userId, ...params }
     })
 }
+
+// 删除帖子
+export function deletePost(data) {
+    return request({
+        url: '/mobile/forum/post/delete',
+        method: 'post',
+        data
+    })
+}

@@ -51,8 +51,8 @@
             <span class="meta-separator">·</span>
             <van-icon name="lock" /> 已锁定
           </span>
-          <!-- 删除按钮，这里假设当前用户ID匹配时显示，先留空样式 -->
-          <span class="delete-btn" v-if="isAuthor">删除</span>
+          <!-- 删除按钮，作者或管理员可删除 -->
+          <span class="delete-btn" v-if="canDelete" @click="confirmDelete">删除</span>
         </div>
 
         <div class="post-stats-row">
@@ -202,8 +202,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast, showImagePreview } from 'vant'
-import { getPostDetail, getCommentList, createComment, syncUser, checkFollow, followPost, unfollowPost } from '@/api/forum'
+import { showToast, showImagePreview, showConfirmDialog } from 'vant'
+import { getPostDetail, getCommentList, createComment, syncUser, checkFollow, followPost, unfollowPost, deletePost } from '@/api/forum'
 import { isWxWorkEnv, getAccessDeniedMessage, shareToUsers, getMockUser } from '@/utils/wxwork'
 import { emojiList, emojiBasePath, renderEmojis, getRecentEmojis, addRecentEmoji } from '@/config/emojis'
 
@@ -243,12 +243,22 @@ function handleBlur() {
 // 最近使用的表情
 const recentEmojis = ref(getRecentEmojis())
 
-// 计算是否是作者 (Mock: 假设当前用户ID存在localStorage)
+// 计算是否是作者
 const isAuthor = computed(() => {
   if (!post.value) return false
   const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
-  // 简单判断，实际应比对ID
-  return post.value.userId === user.userId || true // 测试阶段全部显示
+  return post.value.userId === user.userId
+})
+
+// 计算是否是管理员
+const isAdmin = computed(() => {
+  const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
+  return user.isAdmin === '1'
+})
+
+// 计算是否可以删除（作者或管理员）
+const canDelete = computed(() => {
+  return isAuthor.value || isAdmin.value
 })
 
 // 计算图片列表
@@ -335,6 +345,35 @@ async function toggleFollow() {
     }
   } catch (e) {
     showToast('操作失败')
+  }
+}
+
+// 确认删除帖子
+async function confirmDelete() {
+  try {
+    await showConfirmDialog({
+      title: '确认删除',
+      message: '删除后无法恢复，确定要删除这篇帖子吗？',
+    })
+    
+    // 用户确认删除
+    const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
+    if (!user.wxUserid) {
+      showToast('请先登录')
+      return
+    }
+    
+    await deletePost({ wxUserid: user.wxUserid, postId: post.value.postId })
+    showToast('删除成功')
+    
+    // 返回上一页
+    router.back()
+  } catch (e) {
+    // 用户取消或请求失败
+    if (e !== 'cancel') {
+      console.error('删除失败', e)
+      showToast('删除失败')
+    }
   }
 }
 

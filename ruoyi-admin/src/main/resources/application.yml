@@ -13,6 +13,13 @@ ruoyi:
   # 验证码类型 math 数字计算 char 字符验证
   captchaType: math
 
+# 企业微信配置
+wxwork:
+  corpId: ww6c5bf47dc5c4ccef
+  agentId: 1000064
+  # corpSecret 敏感信息，建议通过环境变量或单独配置文件设置
+  corpSecret: ${WXWORK_CORP_SECRET:39WRTdBgvzHOtgk5vPqze7JHKnwBURZO-IRyGex7Djo}
+
 # 开发环境配置
 server:
   # 服务器的HTTP端口，默认为8080

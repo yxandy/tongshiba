@@ -17,7 +17,10 @@
         @click-left="goBack"
       >
         <template #right>
-          <van-icon name="share-o" size="20" @click="handleShare" />
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" @click="handleShare" style="cursor: pointer;">
+            <path d="M12 2v12M12 2l4 4M12 2l-4 4"/>
+            <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+          </svg>
         </template>
       </van-nav-bar>
 

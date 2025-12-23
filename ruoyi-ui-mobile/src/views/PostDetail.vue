@@ -12,11 +12,9 @@
       <!-- 顶部导航 -->
       <van-nav-bar 
         title="详情" 
-        left-arrow 
         fixed 
         placeholder
         class="nav-bar-dark"
-        @click-left="goBack"
       >
         <template #right>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" @click="handleShare" style="cursor: pointer;">
@@ -840,6 +838,7 @@ function formatTime(timeStr) {
   background: var(--bg-color); /* 评论区背景改为灰色，与内容区分 */
   padding: 0;
   min-height: 200px;
+  padding-bottom: 80px; /* 给固定的评论输入框留出空间 */
 }
 
 .comment-item {

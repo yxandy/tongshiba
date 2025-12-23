@@ -1,5 +1,11 @@
 <template>
   <div class="post-detail-page">
+    <!-- 调试面板 -->
+    <div v-if="debugInfo" class="debug-panel" @click="debugInfo = ''">
+      <pre>{{ debugInfo }}</pre>
+      <small>点击关闭</small>
+    </div>
+    
     <!-- 非企业微信环境提示 -->
     <div v-if="!isWxWork && !isDev" class="access-denied">
       <van-icon name="warning-o" size="60" />
@@ -126,26 +132,21 @@
       </div>
 
       <!-- 底部评论操作区 (常驻+表情面板) -->
-      <div v-if="post?.isLocked !== '1'" class="comment-action-area">
+      <div v-if="post?.isLocked !== '1'" class="comment-action-area" :style="{ bottom: bottomOffset + 'px' }">
         <!-- 输入栏 -->
         <div class="comment-input-bar">
-          <div 
-            class="input-wrap"
-            :class="{ 'expanded': isInputExpanded }"
-          >
-            <textarea
-              v-model="commentText"
-              :rows="isInputExpanded ? 4 : 1"
-              placeholder="发表评论..."
-              class="native-textarea"
-              ref="commentInputRef"
-              @focus="isFocused = true; showEmojiPicker = false"
-              @blur="handleBlur"
-            ></textarea>
-          </div>
+          <textarea
+            v-model="commentText"
+            :rows="isInputExpanded ? 4 : 1"
+            placeholder="发表评论..."
+            class="comment-textarea"
+            ref="commentInputRef"
+            @focus="isFocused = true; showEmojiPicker = false"
+            @blur="handleBlur"
+          ></textarea>
           <van-icon 
             :name="showEmojiPicker ? 'smile' : 'smile-o'" 
-            size="28" 
+            size="24" 
             class="emoji-toggle-icon"
             :class="{ active: showEmojiPicker }"
             @click="toggleEmojiPicker" 
@@ -207,7 +208,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showImagePreview, showConfirmDialog } from 'vant'
 import { getPostDetail, getCommentList, createComment, syncUser, checkFollow, followPost, unfollowPost, deletePost } from '@/api/forum'
@@ -234,6 +235,12 @@ const commentText = ref('')
 const commentInputRef = ref(null) // 输入框引用
 const isFocused = ref(false)
 const defaultAvatar = 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg'
+const debugInfo = ref('') // 调试信息
+const bottomOffset = ref(0) // 评论区域底部偏移（键盘高度）
+
+// 记录锁定的键盘高度和初始 offsetTop
+let lockedKeyboardHeight = 0
+let initialOffsetTop = 0
 
 // 输入框是否展开
 const isInputExpanded = computed(() => {
@@ -249,6 +256,32 @@ function handleBlur() {
 
 // 最近使用的表情
 const recentEmojis = ref(getRecentEmojis())
+
+// 监听软键盘高度变化
+function handleKeyboardResize() {
+  if (window.visualViewport) {
+    const keyboardHeight = window.innerHeight - window.visualViewport.height
+    const offsetTop = window.visualViewport.offsetTop
+    
+    if (keyboardHeight > 50) {
+      // 键盘弹出状态
+      if (lockedKeyboardHeight === 0) {
+        // 首次弹出或从收起状态重新弹出，锁定高度和初始 offsetTop
+        lockedKeyboardHeight = keyboardHeight
+        initialOffsetTop = offsetTop
+      }
+      // 计算 offsetTop 的变化量（相对于初始值）
+      const offsetDelta = offsetTop - initialOffsetTop
+      // 使用锁定的高度减去变化量
+      bottomOffset.value = Math.max(0, lockedKeyboardHeight - offsetDelta)
+    } else {
+      // 键盘收起，重置所有锁定值
+      lockedKeyboardHeight = 0
+      initialOffsetTop = 0
+      bottomOffset.value = 0
+    }
+  }
+}
 
 // 计算是否是作者
 const isAuthor = computed(() => {
@@ -279,11 +312,93 @@ const images = computed(() => {
 })
 
 onMounted(async () => {
+  // 禁止 body 滚动（与发帖页面保持一致，防止键盘弹出时视口变化）
+  document.body.style.overflow = 'hidden'
+  document.body.style.height = '100%'
+  document.documentElement.style.overflow = 'hidden'
+  document.documentElement.style.height = '100%'
+  
   isWxWork.value = isWxWorkEnv()
   
   if (isDev.value || isWxWork.value) {
     await initUser()
     await loadPost()
+  }
+  
+  // 调试：监控关键信息
+  const debugWidths = () => {
+    const vw = window.innerWidth
+    const vvw = window.visualViewport?.width || 'N/A'
+    const vvLeft = window.visualViewport?.offsetLeft || 0
+    const scrollX = window.scrollX || window.pageXOffset || 0
+    const bodyScrollLeft = document.body.scrollLeft
+    const docScrollLeft = document.documentElement.scrollLeft
+    const pageScrollLeft = document.querySelector('.post-detail-page')?.scrollLeft || 0
+    
+    // 评论框位置
+    const actionArea = document.querySelector('.comment-action-area')
+    const actionRect = actionArea?.getBoundingClientRect()
+    const actionLeft = actionRect?.left || 'N/A'
+    
+    let info = `视口: ${vw}px | VP: ${vvw}px\n`
+    info += `vpOffsetLeft: ${vvLeft}px\n`
+    info += `scrollX: ${scrollX}px\n`
+    info += `bodyScrollL: ${bodyScrollLeft}px\n`
+    info += `docScrollL: ${docScrollLeft}px\n`
+    info += `pageScrollL: ${pageScrollLeft}px\n`
+    info += `actionLeft: ${actionLeft}px`
+    
+    debugInfo.value = info
+  }
+  
+  // 监听 visualViewport 变化，动态调整所有容器宽度
+  const updateWidthsForViewport = () => {
+    if (window.visualViewport) {
+      const vpWidth = window.visualViewport.width
+      // 调整页面容器和评论区域（不调整 body/html）
+      const page = document.querySelector('.post-detail-page')
+      const actionArea = document.querySelector('.comment-action-area')
+      if (page) page.style.width = `${vpWidth}px`
+      if (actionArea) actionArea.style.width = `${vpWidth}px`
+      // 调整导航栏（Vant组件）
+      document.querySelectorAll('.van-nav-bar, .van-nav-bar__content').forEach(el => {
+        el.style.width = `${vpWidth}px`
+      })
+    }
+  }
+  
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateWidthsForViewport)
+    window.visualViewport.addEventListener('scroll', updateWidthsForViewport)
+    // 监听键盘高度变化
+    window.visualViewport.addEventListener('resize', handleKeyboardResize)
+    window.visualViewport.addEventListener('scroll', handleKeyboardResize)
+  }
+  
+  // 监听 focus 事件
+  const textarea = document.querySelector('.comment-textarea')
+  if (textarea) {
+    textarea.addEventListener('focus', () => {
+      debugWidths()
+      // 延迟再次检查（键盘弹出后）
+      setTimeout(debugWidths, 500)
+    })
+  }
+})
+
+onUnmounted(() => {
+  // 恢复 body 样式
+  document.body.style.overflow = ''
+  document.body.style.height = ''
+  document.body.style.width = ''
+  document.documentElement.style.overflow = ''
+  document.documentElement.style.height = ''
+  document.documentElement.style.width = ''
+  
+  // 移除 visualViewport 事件监听
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleKeyboardResize)
+    window.visualViewport.removeEventListener('scroll', handleKeyboardResize)
   }
 })
 
@@ -535,9 +650,38 @@ function formatTime(timeStr) {
 
 <style scoped>
 .post-detail-page {
-  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%; /* 使用 100% 而非 left/right: 0 */
+  height: 100%;
   background: var(--bg-color);
-  padding-bottom: 70px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* 调试面板 */
+.debug-panel {
+  position: fixed;
+  top: 50px;
+  left: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.9);
+  color: #0f0;
+  padding: 12px;
+  border-radius: 8px;
+  z-index: 9999;
+  font-size: 12px;
+}
+.debug-panel pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.debug-panel small {
+  color: #999;
+  display: block;
+  margin-top: 8px;
 }
 
 /* 导航栏深色主题 */
@@ -768,10 +912,12 @@ function formatTime(timeStr) {
   position: fixed;
   bottom: 0;
   left: 0;
-  right: 0;
+  width: 100%; /* 使用 100% 而非 100vw，避免滚动条导致溢出 */
+  overflow: hidden;
   background: #fff;
   z-index: 100;
   border-top: 1px solid #eee;
+  box-sizing: border-box;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -785,62 +931,39 @@ function formatTime(timeStr) {
 .comment-input-bar {
   display: flex;
   align-items: center;
-  padding: 10px 16px;
+  padding: 12px 16px;
   gap: 12px;
-}
-
-.input-wrap {
-  flex: 1;
-  min-height: 36px; /* 默认高度 */
-  display: flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: #f7f7f7; /* 默认灰色背景 */
-  border-radius: 18px; /* 圆润的边角 */
-  transition: all 0.2s; /* 平滑过渡 */
-}
-
-/* 展开状态：类似多行文本域 */
-.input-wrap.expanded {
-  min-height: 100px;
-  max-width: calc(100% - 40px); /* 限制最大宽度，给表情图标留空间 */
-  align-items: flex-start; /* 文字顶对齐 */
-  padding: 8px 12px;
-  background: #f2f3f5; /* 稍微深一点的背景 */
-  border-radius: 8px; /* 方一点的圆角 */
-}
-
-@media (prefers-color-scheme: dark) {
-  .input-wrap.expanded {
-    background: #3a3a3a;
-  }
-}
-
-.native-textarea {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden; /* 防止子元素溢出 */
+}
+
+/* 评论输入框 - 简洁设计，模仿真实系统 */
+.comment-textarea {
+  flex: 1;
   border: none;
   background: transparent;
-  padding: 0;
-  margin: 0;
   font-size: 15px;
   color: #333;
   resize: none;
   outline: none;
-  line-height: 1.4;
-  /* 确保在iOS上可点击 */
+  line-height: 1.5;
+  padding: 0;
   -webkit-user-select: text;
   user-select: text;
 }
 
+.comment-textarea::placeholder {
+  color: #999;
+}
+
 @media (prefers-color-scheme: dark) {
-  .input-wrap {
-    background: #3a3a3a;
-  }
-  .native-textarea {
+  .comment-textarea {
     color: #e5e5e5;
   }
-  .native-textarea::placeholder {
-    color: #888;
+  .comment-textarea::placeholder {
+    color: #666;
   }
 }
 
@@ -1006,5 +1129,15 @@ function formatTime(timeStr) {
   .post-detail-page .van-nav-bar__placeholder {
     background: #191919 !important;
   }
+}
+</style>
+
+<!-- 全局样式（非作用域）- 强制禁止横向滚动 -->
+<style>
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  touch-action: pan-y !important; /* 只允许纵向触摸滚动 */
+  overscroll-behavior-x: none !important; /* 禁止横向过度滚动 */
 }
 </style>

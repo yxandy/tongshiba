@@ -1,10 +1,5 @@
 <template>
   <div class="post-detail-page">
-    <!-- 调试面板 -->
-    <div v-if="debugInfo" class="debug-panel" @click="debugInfo = ''">
-      <pre>{{ debugInfo }}</pre>
-      <small>点击关闭</small>
-    </div>
     
     <!-- 非企业微信环境提示 -->
     <div v-if="!isWxWork && !isDev" class="access-denied">
@@ -141,8 +136,10 @@
             placeholder="发表评论..."
             class="comment-textarea"
             ref="commentInputRef"
+            enterkeyhint="send"
             @focus="isFocused = true; showEmojiPicker = false"
             @blur="handleBlur"
+            @keydown.enter.prevent="handleEnterKey"
           ></textarea>
           <van-icon 
             :name="showEmojiPicker ? 'smile' : 'smile-o'" 
@@ -252,6 +249,14 @@ function handleBlur() {
   setTimeout(() => {
     isFocused.value = false
   }, 100)
+}
+
+// 处理回车键（发送评论）
+function handleEnterKey() {
+  // 有内容时发送，没有内容时不做任何操作
+  if (commentText.value.trim()) {
+    submitComment()
+  }
 }
 
 // 最近使用的表情

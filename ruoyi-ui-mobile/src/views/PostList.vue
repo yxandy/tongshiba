@@ -1,10 +1,5 @@
 <template>
   <div class="post-list-page">
-    <!-- 调试面板（生产环境可删除） -->
-    <div v-if="debugInfo" class="debug-panel" @click="debugInfo = ''">
-      <pre>{{ debugInfo }}</pre>
-      <small>点击关闭</small>
-    </div>
     
     <!-- 非企业微信环境提示 -->
     <div v-if="!isWxWork && !isDev" class="access-denied">

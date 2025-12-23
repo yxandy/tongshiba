@@ -130,7 +130,7 @@
         <div class="comment-input-bar">
           <textarea
             v-model="commentText"
-            :rows="isInputExpanded ? 4 : 1"
+            :rows="isInputExpanded ? 5 : 2"
             placeholder="发表评论..."
             class="comment-textarea"
             ref="commentInputRef"

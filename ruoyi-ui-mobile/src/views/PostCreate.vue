@@ -247,9 +247,12 @@ async function initUser() {
   }
 }
 
-// 是否可以提交
+// 是否可以提交：有标题 + (有内容 或 有图片)
 const canSubmit = computed(() => {
-  return title.value.trim().length > 0 && content.value.trim().length > 0
+  const hasTitle = title.value.trim().length > 0
+  const hasContent = content.value.trim().length > 0
+  const hasImages = imageList.value.length > 0
+  return hasTitle && (hasContent || hasImages)
 })
 
 // 返回
@@ -272,24 +275,68 @@ function selectImage() {
   fileInput.value?.click()
 }
 
-// 处理图片选择
-function handleImageSelect(event) {
-  const files = event.target.files
-  if (!files || files.length === 0) return
-
-  // 限制最多9张图片
-  if (imageList.value.length + files.length > 9) {
-    showToast('最多只能上传9张图片')
-    return
-  }
-
-  Array.from(files).forEach(file => {
+// 压缩图片
+function compressImage(file, maxWidth = 1200, quality = 0.7) {
+  return new Promise((resolve) => {
     const reader = new FileReader()
     reader.onload = (e) => {
-      imageList.value.push(e.target.result)
+      const img = new Image()
+      img.onload = () => {
+        // 计算缩放后的尺寸
+        let width = img.width
+        let height = img.height
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+        
+        // 使用 Canvas 进行压缩
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        // 转换为 Base64
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality)
+        resolve(compressedDataUrl)
+      }
+      img.src = e.target.result
     }
     reader.readAsDataURL(file)
   })
+}
+
+// 处理图片选择（带压缩）
+async function handleImageSelect(event) {
+  const files = event.target.files
+  if (!files || files.length === 0) return
+
+  // 限制单次上传数量，避免界面卡顿
+  const MAX_SINGLE_UPLOAD = 20
+  if (files.length > MAX_SINGLE_UPLOAD) {
+    showToast(`单次最多选择${MAX_SINGLE_UPLOAD}张图片`)
+    return
+  }
+
+  // 压缩阈值：500KB
+  const COMPRESS_THRESHOLD = 500 * 1024
+
+  for (const file of Array.from(files)) {
+    if (file.size > COMPRESS_THRESHOLD) {
+      // 大于 500KB 的图片进行压缩
+      const compressedDataUrl = await compressImage(file)
+      imageList.value.push(compressedDataUrl)
+    } else {
+      // 小于 500KB 的图片直接使用
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        imageList.value.push(e.target.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   // 清空input，允许重复选择同一文件
   event.target.value = ''

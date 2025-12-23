@@ -51,20 +51,9 @@
             <!-- 内容摘要 (支持表情渲染) -->
             <div class="post-content" v-html="truncateContent(post.content)"></div>
             
-            <!-- 图片预览 (缩略图) -->
-            <div v-if="post.images && getImages(post.images).length > 0" class="post-images">
-              <van-image
-                v-for="(img, idx) in getImages(post.images).slice(0, 3)"
-                :key="idx"
-                width="80"
-                height="80"
-                fit="cover"
-                :src="img"
-                class="post-image"
-              />
-              <span v-if="getImages(post.images).length > 3" class="more-images">
-                +{{ getImages(post.images).length - 3 }}
-              </span>
+            <!-- 如果没有文字内容但有图片，显示图片图标 -->
+            <div v-if="(!post.content || !post.content.trim()) && post.images && getImages(post.images).length > 0" class="post-image-icon">
+              <van-icon name="photo-o" size="20" />
             </div>
 
             <!-- 底部信息 -->
@@ -327,6 +316,13 @@ function getImages(images) {
   margin-bottom: 8px;
   color: #000;
   line-height: 1.4;
+  /* 限制最多 2 行，超出省略 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -348,20 +344,16 @@ function getImages(images) {
   -webkit-box-orient: vertical;
 }
 
-.post-images {
-  display: flex;
-  gap: 6px;
+/* 纯图片帖子的图标 */
+.post-image-icon {
+  color: #999;
   margin-bottom: 12px;
-  align-items: center;
 }
 
-.post-image {
-  border-radius: 4px;
-}
-
-.more-images {
-  font-size: 12px;
-  color: var(--text-secondary);
+@media (prefers-color-scheme: dark) {
+  .post-image-icon {
+    color: #666;
+  }
 }
 
 .post-footer {

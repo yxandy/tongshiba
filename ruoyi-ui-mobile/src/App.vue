@@ -34,6 +34,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* 禁用双击缩放手势，但保留正常的触摸滚动 */
+  touch-action: manipulation;
 }
 
 body {

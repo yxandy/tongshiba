@@ -15,7 +15,7 @@
     <!-- 正常内容 -->
     <template v-else>
       <!-- 顶部导航 -->
-      <van-nav-bar fixed placeholder class="nav-bar-dark">
+      <van-nav-bar title="帖子列表" fixed placeholder class="nav-bar-dark">
         <template #right>
           <van-popover 
             v-model:show="showMenu" 

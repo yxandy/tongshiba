@@ -203,7 +203,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showImagePreview, showConfirmDialog } from 'vant'
 import { getPostDetail, getCommentList, createComment, syncUser, checkFollow, followPost, unfollowPost, deletePost } from '@/api/forum'
@@ -539,6 +539,13 @@ async function submitComment() {
     return
   }
 
+  // 关闭键盘
+  if (commentInputRef.value) {
+    commentInputRef.value.blur()
+  }
+  isFocused.value = false
+  showEmojiPicker.value = false
+
   showToast({
     type: 'loading',
     message: '发布中...',
@@ -558,9 +565,12 @@ async function submitComment() {
       content: commentText.value,
     })
     
-    showToast('评论成功')
+    // 在屏幕中间显示评论成功
+    showToast({
+      message: '评论成功',
+      position: 'middle'
+    })
     commentText.value = ''
-    showEmojiPicker.value = false // 发送成功后关闭表情面板
     
     // 刷新评论列表
     commentPageNum.value = 1
@@ -572,8 +582,29 @@ async function submitComment() {
     if (post.value) {
       post.value.commentCount = (post.value.commentCount || 0) + 1
     }
+    
+    // 滚动到评论底部（使用 nextTick 确保 DOM 更新）
+    await nextTick()
+    // 再等一点时间确保渲染完成
+    setTimeout(() => {
+      const page = document.querySelector('.post-detail-page')
+      const allComments = document.querySelectorAll('.comment-item')
+      const lastComment = allComments.length > 0 ? allComments[allComments.length - 1] : null
+      
+      if (page && lastComment) {
+        const pageRect = page.getBoundingClientRect()
+        const commentRect = lastComment.getBoundingClientRect()
+        // 计算相对于滚动容器的目标位置
+        const currentScrollTop = page.scrollTop
+        const targetScrollTop = currentScrollTop + commentRect.top - pageRect.top - 100
+        page.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
+      }
+    }, 100)
   } catch (e) {
-    showToast('评论失败')
+    showToast({
+      message: '评论失败',
+      position: 'middle'
+    })
   }
 }
 

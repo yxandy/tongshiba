@@ -429,7 +429,7 @@ async function loadPost() {
   try {
     const res = await getPostDetail(route.params.id)
     post.value = res.data
-    loadComments()
+    // van-list 会在组件挂载时自动触发 load，不需要手动调用 loadComments
     // 检查关注状态
     loadFollowStatus()
   } catch (e) {
@@ -513,14 +513,20 @@ async function loadComments() {
       pageSize: 20 
     })
     const rows = res.rows || []
-    
+    // 过滤重复数据 (应对后端分页失效返回相同数据的情况)
+    const newRows = rows.filter(item => 
+      !comments.value.some(existing => existing.commentId === item.commentId)
+    )
+
     if (commentPageNum.value === 1) {
       comments.value = rows
     } else {
-      comments.value.push(...rows)
+      comments.value.push(...newRows)
     }
     
-    if (rows.length < 20) {
+    // 如果没有新数据，或者返回数据少于页大小，或者是第一页且总数匹配，则结束
+    const total = res.total || 0
+    if (newRows.length === 0 || rows.length < 20 || (total > 0 && comments.value.length >= total)) {
       commentFinished.value = true
     } else {
       commentPageNum.value++

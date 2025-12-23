@@ -44,6 +44,8 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden; /* 禁止横向滚动 */
+  max-width: 100vw; /* 限制最大宽度 */
 }
 
 html {
@@ -52,5 +54,6 @@ html {
 
 #app {
   min-height: 100vh;
+  overflow-x: hidden; /* 禁止横向滚动 */
 }
 </style>

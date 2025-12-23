@@ -10,10 +10,11 @@
     <template v-else>
       <!-- 顶部导航 -->
       <van-nav-bar 
-        title="帖子详情" 
+        title="详情" 
         left-arrow 
         fixed 
         placeholder
+        class="nav-bar-dark"
         @click-left="goBack"
       >
         <template #right>
@@ -145,7 +146,8 @@
           <van-icon 
             :name="showEmojiPicker ? 'smile' : 'smile-o'" 
             size="28" 
-            :color="showEmojiPicker ? '#1989fa' : '#333'"
+            class="emoji-toggle-icon"
+            :class="{ active: showEmojiPicker }"
             @click="toggleEmojiPicker" 
           />
         </div>
@@ -538,6 +540,22 @@ function formatTime(timeStr) {
   padding-bottom: 70px;
 }
 
+/* 导航栏深色主题 */
+@media (prefers-color-scheme: dark) {
+  .nav-bar-dark {
+    background: #191919 !important;
+  }
+  .nav-bar-dark :deep(.van-nav-bar__title) {
+    color: #f5f5f5 !important;
+  }
+  .nav-bar-dark :deep(.van-nav-bar__arrow) {
+    color: #f5f5f5 !important;
+  }
+  .nav-bar-dark :deep(svg) {
+    stroke: #f5f5f5 !important;
+  }
+}
+
 .access-denied {
   display: flex;
   flex-direction: column;
@@ -550,6 +568,7 @@ function formatTime(timeStr) {
 .post-content-wrap {
   background: #fff;
   padding: 16px;
+  padding-top: 20px; /* 确保不被导航栏遮挡 */
   margin-bottom: 10px;
 }
 
@@ -784,10 +803,17 @@ function formatTime(timeStr) {
 /* 展开状态：类似多行文本域 */
 .input-wrap.expanded {
   min-height: 100px;
+  max-width: calc(100% - 40px); /* 限制最大宽度，给表情图标留空间 */
   align-items: flex-start; /* 文字顶对齐 */
   padding: 8px 12px;
   background: #f2f3f5; /* 稍微深一点的背景 */
   border-radius: 8px; /* 方一点的圆角 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .input-wrap.expanded {
+    background: #3a3a3a;
+  }
 }
 
 .native-textarea {
@@ -812,6 +838,26 @@ function formatTime(timeStr) {
   }
   .native-textarea {
     color: #e5e5e5;
+  }
+  .native-textarea::placeholder {
+    color: #888;
+  }
+}
+
+/* 表情切换图标 */
+.emoji-toggle-icon {
+  color: #666;
+  cursor: pointer;
+}
+.emoji-toggle-icon.active {
+  color: #1989fa;
+}
+@media (prefers-color-scheme: dark) {
+  .emoji-toggle-icon {
+    color: #999;
+  }
+  .emoji-toggle-icon.active {
+    color: #4da3ff;
   }
 }
 
@@ -938,6 +984,27 @@ function formatTime(timeStr) {
     background: #3a3a3a;
     color: #666;
     border: 1px solid #444;
+  }
+}
+</style>
+
+<!-- 全局样式：导航栏深色主题 -->
+<style>
+@media (prefers-color-scheme: dark) {
+  .post-detail-page .van-nav-bar {
+    background: #191919 !important;
+  }
+  .post-detail-page .van-nav-bar__title {
+    color: #f5f5f5 !important;
+  }
+  .post-detail-page .van-nav-bar__arrow {
+    color: #f5f5f5 !important;
+  }
+  .post-detail-page .van-nav-bar__right svg {
+    stroke: #f5f5f5 !important;
+  }
+  .post-detail-page .van-nav-bar__placeholder {
+    background: #191919 !important;
   }
 }
 </style>

@@ -313,17 +313,29 @@ async function handleImageSelect(event) {
   const files = event.target.files
   if (!files || files.length === 0) return
 
+  // 过滤非图片文件
+  const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'))
+  if (imageFiles.length === 0) {
+    showToast('请选择图片文件')
+    event.target.value = ''
+    return
+  }
+  if (imageFiles.length < files.length) {
+    showToast('已忽略非图片文件')
+  }
+
   // 限制单次上传数量，避免界面卡顿
   const MAX_SINGLE_UPLOAD = 20
-  if (files.length > MAX_SINGLE_UPLOAD) {
+  if (imageFiles.length > MAX_SINGLE_UPLOAD) {
     showToast(`单次最多选择${MAX_SINGLE_UPLOAD}张图片`)
+    event.target.value = ''
     return
   }
 
   // 压缩阈值：500KB
   const COMPRESS_THRESHOLD = 500 * 1024
 
-  for (const file of Array.from(files)) {
+  for (const file of imageFiles) {
     if (file.size > COMPRESS_THRESHOLD) {
       // 大于 500KB 的图片进行压缩
       const compressedDataUrl = await compressImage(file)

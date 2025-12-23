@@ -14,11 +14,13 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',  // 允许局域网访问
+    allowedHosts: ['hnfz.sdecl.com.cn'],  // 允许的域名
     proxy: {
-      '/api': {
+      '/tongshiba-api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        // 将 /tongshiba-api 替换为 /tongshiba（后端的 context-path）
+        rewrite: (path) => path.replace(/^\/tongshiba-api/, '/tongshiba')
       }
     }
   }

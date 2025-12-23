@@ -65,6 +65,12 @@ public class MobileForumController extends BaseController {
     public TableDataInfo listPosts(ForumPost forumPost) {
         startPage();
         List<ForumPost> list = forumPostService.selectForumPostList(forumPost);
+        // 列表页不需要图片数据，用标识替代以减少传输量
+        for (ForumPost post : list) {
+            if (post.getImages() != null && !post.getImages().isEmpty()) {
+                post.setImages("1"); // 标识有图片
+            }
+        }
         return getDataTable(list);
     }
 

@@ -52,7 +52,7 @@
             <div class="post-content" v-html="truncateContent(post.content)"></div>
             
             <!-- 如果没有文字内容但有图片，显示图片图标 -->
-            <div v-if="(!post.content || !post.content.trim()) && post.images && getImages(post.images).length > 0" class="post-image-icon">
+            <div v-if="(!post.content || !post.content.trim()) && post.images" class="post-image-icon">
               <van-icon name="photo-o" size="20" />
             </div>
 
@@ -120,10 +120,10 @@ function onMenuSelect(action) {
 onMounted(async () => {
   isWxWork.value = isWxWorkEnv()
   
-  // 开发环境或企业微信环境，同步用户并加载数据
+  // 开发环境或企业微信环境，同步用户信息
   if (isDev.value || isWxWork.value) {
     await initUser()
-    loadMore()
+    // van-list 会自动触发 @load 事件加载数据，无需手动调用
   }
 })
 

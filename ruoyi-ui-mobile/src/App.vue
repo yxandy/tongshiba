@@ -1,8 +1,32 @@
 <template>
-  <router-view />
+  <div v-if="isAllowed">
+    <router-view />
+  </div>
+  <div v-else class="access-denied">
+    <div class="denied-content">
+      <van-icon name="info" color="#1989fa" size="64" />
+      <p class="denied-text">仅企业内可查看</p>
+    </div>
+  </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
+import { isWxWorkEnv } from '@/utils/wxwork'
+
+const isAllowed = ref(true)
+
+onMounted(() => {
+  // 生产环境强制检查企业微信环境
+  // 本地开发可以通过 ?debug=true 绕过
+  const isDebug = new URLSearchParams(window.location.search).get('debug') === 'true'
+  
+  if (!isWxWorkEnv() && !isDebug) {
+    isAllowed.value = false
+    // 设置黑色背景
+    document.body.style.backgroundColor = '#000000'
+  }
+})
 </script>
 
 <style>
@@ -52,5 +76,27 @@ html {
 
 #app {
   min-height: 100vh;
+}
+
+.access-denied {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.denied-content {
+  text-align: center;
+  margin-top: -30%;
+}
+
+.denied-text {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #ffffff;
+  letter-spacing: 1px;
 }
 </style>

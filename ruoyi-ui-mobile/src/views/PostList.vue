@@ -179,6 +179,7 @@ async function loadMore() {
   try {
     const res = await getPostList({ pageNum: pageNum.value, pageSize: pageSize.value })
     const rows = res.rows || []
+    const total = res.total || 0
     
     if (pageNum.value === 1) {
       postList.value = rows
@@ -186,7 +187,8 @@ async function loadMore() {
       postList.value.push(...rows)
     }
     
-    if (rows.length < pageSize.value) {
+    // 使用 total 字段判断是否已加载完毕
+    if (postList.value.length >= total || rows.length === 0) {
       finished.value = true
     } else {
       pageNum.value++

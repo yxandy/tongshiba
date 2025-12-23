@@ -661,17 +661,18 @@ async function submitPost() {
 .action-btn {
   width: 44px;
   height: 36px;
-  background: #f5f5f5;
+  background: #333; /* 深色主题默认 */
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  color: #f5f5f5; /* 浅色图标 */
 }
 
 .action-btn .van-icon {
   font-size: 20px;
-  color: #333;
+  color: inherit;
 }
 
 .action-btn:active {
@@ -685,6 +686,10 @@ async function submitPost() {
   }
   .emoji-item:active {
     background: #f0f0f0;
+  }
+  .action-btn {
+    background: #f5f5f5;
+    color: #333;
   }
 }
 </style>

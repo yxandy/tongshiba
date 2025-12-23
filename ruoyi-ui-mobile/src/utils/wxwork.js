@@ -25,8 +25,7 @@ export function getMockUser() {
     return {
         wxUserid: 'test_user_001',
         nickname: '测试用户',
-        avatar: 'https://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTKq2CRmib1mG2r7icH5Xn0MIicFqLjuJED0hibNfLf2wictR4ZkKHXxoTfXZKibibHjwPheEic8cWX93rMmgQ/132',
-        department: '技术部'
+        avatar: 'https://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTKq2CRmib1mG2r7icH5Xn0MIicFqLjuJED0hibNfLf2wictR4ZkKHXxoTfXZKibibHjwPheEic8cWX93rMmgQ/132'
     }
 }
 
@@ -132,9 +131,8 @@ export async function shareToUsers(title, link, desc = '', imgUrl = '') {
 }
 
 /**
- * 企业微信 OAuth 登录
- * 检查 URL 中是否有 code 参数，如果有则调用后端换取用户信息
- * 如果没有 code 且需要登录，则跳转到 OAuth 授权页
+ * 企业微信登录
+ * 检查 URL 中是否有 userid 参数（由上层服务传递）
  * @returns {Promise<object|null>} 用户信息或 null
  */
 export async function loginWithWxWork() {
@@ -152,35 +150,35 @@ export async function loginWithWxWork() {
         }
     }
 
-    // 2. 非企业微信环境使用模拟用户
-    if (!isWxWorkEnv()) {
-        console.log('非企业微信环境，使用模拟用户')
-        return null
-    }
-
-    // 3. 检查 URL 中是否有 code 参数
+    // 2. 检查 URL 中是否有 userid 参数（由上层服务传递）
     const urlParams = new URLSearchParams(window.location.search)
-    const code = urlParams.get('code')
+    const userid = urlParams.get('userid')
 
-    if (code) {
-        console.log('检测到 OAuth code，正在获取用户信息...')
+    console.log('[DEBUG] 当前 URL:', window.location.href)
+    console.log('[DEBUG] URL 参数:', Object.fromEntries(urlParams))
+    console.log('[DEBUG] userid:', userid)
+
+    if (userid) {
+        console.log('[DEBUG] 检测到 userid，正在调用后端 API...')
         try {
             const res = await request({
                 url: '/mobile/wxwork/user/login',
                 method: 'get',
-                params: { code }
+                params: { userid }
             })
+
+            console.log('[DEBUG] 后端返回结果:', res)
 
             if (res.code === 200 && res.data) {
                 // 存储用户信息
                 localStorage.setItem('forumUser', JSON.stringify(res.data))
 
-                // 清除 URL 中的 code 参数
-                urlParams.delete('code')
-                urlParams.delete('state')
+                // 清除 URL 中的 userid 参数
+                urlParams.delete('userid')
                 const newUrl = window.location.pathname +
                     (urlParams.toString() ? '?' + urlParams.toString() : '') +
                     window.location.hash
+
                 window.history.replaceState({}, '', newUrl)
 
                 console.log('用户登录成功:', res.data)
@@ -193,24 +191,14 @@ export async function loginWithWxWork() {
         }
     }
 
-    // 4. 没有 code，需要跳转到 OAuth 授权页
-    console.log('未登录，跳转到 OAuth 授权页...')
-    try {
-        const redirectUri = window.location.href.split('?')[0] // 当前页面作为回调
-        const res = await request({
-            url: '/mobile/wxwork/oauth/url',
-            method: 'get',
-            params: { redirectUri }
-        })
-
-        if (res.code === 200 && res.data?.oauthUrl) {
-            window.location.href = res.data.oauthUrl
-            return null // 跳转后不会执行到这里
-        }
-    } catch (e) {
-        console.error('获取 OAuth URL 失败:', e)
+    // 3. 非企业微信环境或没有 userid，使用模拟用户
+    if (!isWxWorkEnv()) {
+        console.log('非企业微信环境，使用模拟用户')
+        return null
     }
 
+    // 4. 企业微信环境但没有 userid，等待上层服务传递
+    console.log('等待上层服务传递 userid...')
     return null
 }
 

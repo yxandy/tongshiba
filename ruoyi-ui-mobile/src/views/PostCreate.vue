@@ -3,12 +3,13 @@
     <!-- 表单内容 -->
     <div class="form-content">
       <van-field
+        ref="titleInputRef"
         v-model="title"
         placeholder="主题"
         :border="false"
         class="title-input"
         maxlength="50"
-        @focus="showEmojiPicker = false"
+        @focus="onInputFocus"
       />
       <van-field
         v-model="content"
@@ -19,7 +20,7 @@
         autosize
         class="content-input"
         maxlength="2000"
-        @focus="showEmojiPicker = false"
+        @focus="onInputFocus"
       />
 
       <!-- 已选图片预览 -->
@@ -36,7 +37,7 @@
     </div>
 
     <!-- 底部功能区固定容器 -->
-    <div class="bottom-container">
+    <div class="bottom-container" :style="{ bottom: bottomOffset + 'px' }">
       <!-- 底部工具栏 -->
       <div class="toolbar">
         <!-- 左侧工具组 -->
@@ -124,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast, showDialog } from 'vant'
 import { createPost, syncUser } from '@/api/forum'
@@ -140,7 +141,11 @@ const imageList = ref([])
 const submitting = ref(false)
 const showEmojiPicker = ref(false)
 const fileInput = ref(null)
-const keyboardHeight = ref(0) // 实际开发中难以精确获取软键盘高度，通常依赖布局自适应
+const titleInputRef = ref(null)
+const bottomOffset = ref(0)
+
+// iOS 输入法辅助栏高度（包含上下箭头和“完成”按钮）
+const IOS_ACCESSORY_BAR_HEIGHT = 44
 
 // 最近使用的表情
 const recentEmojis = ref(getRecentEmojis())
@@ -154,10 +159,76 @@ watch(showEmojiPicker, (newVal) => {
   }
 })
 
+// 记录锁定的键盘高度和初始 offsetTop
+let lockedKeyboardHeight = 0
+let initialOffsetTop = 0
+
+// 监听软键盘高度变化
+function handleViewportResize() {
+  if (window.visualViewport) {
+    const keyboardHeight = window.innerHeight - window.visualViewport.height
+    const offsetTop = window.visualViewport.offsetTop
+    
+    if (keyboardHeight > 50) {
+      // 键盘弹出状态
+      if (lockedKeyboardHeight === 0) {
+        // 首次弹出或从收起状态重新弹出，锁定高度和初始 offsetTop
+        lockedKeyboardHeight = keyboardHeight
+        initialOffsetTop = offsetTop
+      }
+      // 计算 offsetTop 的变化量（相对于初始值）
+      const offsetDelta = offsetTop - initialOffsetTop
+      // 使用锁定的高度减去变化量
+      bottomOffset.value = Math.max(0, lockedKeyboardHeight - offsetDelta)
+    } else {
+      // 键盘收起，重置所有锁定值
+      lockedKeyboardHeight = 0
+      initialOffsetTop = 0
+      bottomOffset.value = 0
+    }
+  }
+}
+
+// 输入框获得焦点时
+function onInputFocus() {
+  showEmojiPicker.value = false
+}
+
 onMounted(async () => {
+  // 禁止 body 滚动（仅在此页面）
+  document.body.style.overflow = 'hidden'
+  document.body.style.height = '100%'
+  document.documentElement.style.overflow = 'hidden'
+  document.documentElement.style.height = '100%'
+  
   isWxWork.value = isWxWorkEnv()
-  // 初始化用户
   await initUser()
+  
+  // 自动聚焦到标题输入框
+  nextTick(() => {
+    if (titleInputRef.value) {
+      titleInputRef.value.focus()
+    }
+  })
+  
+  // 监听 visualViewport 变化（resize 和 scroll）
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleViewportResize)
+    window.visualViewport.addEventListener('scroll', handleViewportResize)
+  }
+})
+
+onUnmounted(() => {
+  // 恢复 body 滚动
+  document.body.style.overflow = ''
+  document.body.style.height = ''
+  document.documentElement.style.overflow = ''
+  document.documentElement.style.height = ''
+  
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleViewportResize)
+    window.visualViewport.removeEventListener('scroll', handleViewportResize)
+  }
 })
 
 async function initUser() {
@@ -296,64 +367,102 @@ async function submitPost() {
 
 <style scoped>
 .post-create-page {
-  min-height: 100vh;
+  position: fixed; /* 强制固定在视口内 */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: #fff;
   display: flex;
   flex-direction: column;
-  padding-top: 20px; /* 顶部留白，模拟状态栏下方 */
+  padding-top: 20px;
+  width: 100%;
+  overflow: hidden; /* 禁止整体滚动 */
+  box-sizing: border-box;
+  z-index: 1; /* 确保在最底层 */
 }
 
 .form-content {
   flex: 1;
   padding: 0 16px;
-  overflow-y: auto;
-  padding-bottom: 70px; /* 防止内容被底部遮挡 */
+  overflow-y: auto; /* 只允许内容区域滚动 */
+  overflow-x: hidden;
+  padding-bottom: 70px;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch; /* iOS 惯性滚动 */
 }
 
 @media (prefers-color-scheme: dark) {
   .post-create-page {
-    background: #191919;
+    background: #000;
+  }
+  .form-content {
+    background: #000;
+  }
+  /* 覆盖 Vant 默认白色背景 */
+  .form-content :deep(.van-cell) {
+    background: #000;
+  }
+  .form-content :deep(.van-field) {
+    background: #000;
   }
 }
 
 /* 标题输入框样式 */
 .title-input {
   padding: 10px 0;
+  background: transparent;
 }
 
 .title-input :deep(.van-field__control) {
-  font-size: 22px; /* 大字号 */
+  font-size: 22px;
   font-weight: 500;
   color: #333;
-  /* 调整光标颜色为蓝色 */
   caret-color: #1989fa;
+  background: transparent;
 }
 
 @media (prefers-color-scheme: dark) {
+  .title-input {
+    background: #000;
+  }
+  .title-input :deep(.van-cell) {
+    background: #000;
+  }
   .title-input :deep(.van-field__control) {
     color: #f5f5f5;
+    background: transparent;
   }
 }
 
 .title-input :deep(.van-field__control::placeholder) {
-  color: #c9c9c9; /* 浅灰色 placeholder */
+  color: #c9c9c9;
   font-weight: 500;
 }
 
 /* 内容输入框样式 */
 .content-input {
   padding: 10px 0;
+  background: transparent;
 }
 
 .content-input :deep(.van-field__control) {
   font-size: 17px;
   line-height: 1.6;
   color: #333;
+  background: transparent;
 }
 
 @media (prefers-color-scheme: dark) {
+  .content-input {
+    background: #000;
+  }
+  .content-input :deep(.van-cell) {
+    background: #000;
+  }
   .content-input :deep(.van-field__control) {
     color: #f5f5f5;
+    background: transparent;
   }
 }
 
@@ -389,7 +498,7 @@ async function submitPost() {
   left: 0;
   right: 0;
   z-index: 100;
-  background: var(--bg-color, #fff); /* 避免透视背景 */
+  background: var(--bg-color, #fff);
 }
 
 /* 底部工具栏 */

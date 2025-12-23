@@ -25,7 +25,7 @@ CREATE TABLE forum_post (
     user_id         BIGINT(20)    NOT NULL                 COMMENT '发帖用户ID',
     title           VARCHAR(200)  NOT NULL                 COMMENT '帖子标题',
     content         TEXT                                   COMMENT '帖子内容',
-    images          VARCHAR(2000) DEFAULT ''               COMMENT '图片URL列表(JSON数组)',
+    images          LONGTEXT                                 COMMENT '图片URL列表(JSON数组，支持Base64)',
     view_count      INT(11)       DEFAULT 0                COMMENT '浏览次数',
     comment_count   INT(11)       DEFAULT 0                COMMENT '评论数量',
     is_locked       CHAR(1)       DEFAULT '0'              COMMENT '是否锁定（0否 1是）',

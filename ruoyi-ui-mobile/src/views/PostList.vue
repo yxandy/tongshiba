@@ -1,5 +1,11 @@
 <template>
   <div class="post-list-page">
+    <!-- 调试面板（生产环境可删除） -->
+    <div v-if="debugInfo" class="debug-panel" @click="debugInfo = ''">
+      <pre>{{ debugInfo }}</pre>
+      <small>点击关闭</small>
+    </div>
+    
     <!-- 非企业微信环境提示 -->
     <div v-if="!isWxWork && !isDev" class="access-denied">
       <van-icon name="warning-o" size="60" />
@@ -8,8 +14,8 @@
 
     <!-- 正常内容 -->
     <template v-else>
-      <!-- 顶部导航 (移除标题，添加右侧菜单) -->
-      <van-nav-bar fixed placeholder>
+      <!-- 顶部导航 -->
+      <van-nav-bar fixed placeholder class="nav-bar-dark">
         <template #right>
           <van-popover 
             v-model:show="showMenu" 
@@ -88,7 +94,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getPostList, syncUser } from '@/api/forum'
-import { isWxWorkEnv, getAccessDeniedMessage, getMockUser } from '@/utils/wxwork'
+import { isWxWorkEnv, getAccessDeniedMessage, getMockUser, loginWithWxWork } from '@/utils/wxwork'
 import { renderEmojis } from '@/config/emojis'
 
 const router = useRouter()
@@ -103,6 +109,7 @@ const finished = ref(false)
 const refreshing = ref(false)
 const pageNum = ref(1)
 const pageSize = ref(10)
+const debugInfo = ref('')  // 调试信息
 
 // 菜单
 const showMenu = ref(false)
@@ -133,18 +140,46 @@ onMounted(async () => {
 
 // 初始化用户
 async function initUser() {
-  // 开发环境使用模拟数据
+  let debug = []
+  debug.push('URL: ' + window.location.href)
+  debug.push('userid参数: ' + new URLSearchParams(window.location.search).get('userid'))
+  
+  // 1. 先尝试企业微信登录（检测 URL 中的 userid）
+  try {
+    const wxUser = await loginWithWxWork()
+    debug.push('loginWithWxWork返回: ' + JSON.stringify(wxUser))
+    
+    if (wxUser) {
+      // 同步用户到后端数据库
+      try {
+        const res = await syncUser(wxUser)
+        const userData = res.data || wxUser
+        localStorage.setItem('forumUser', JSON.stringify(userData))
+        debug.push('syncUser成功: ' + JSON.stringify(userData))
+      } catch (e) {
+        debug.push('syncUser失败: ' + e.message)
+      }
+      debugInfo.value = debug.join('\n')
+      return
+    }
+  } catch (e) {
+    debug.push('loginWithWxWork异常: ' + e.message)
+  }
+  
+  // 2. 开发环境使用模拟数据
   if (isDev.value && !isWxWork.value) {
+    debug.push('开发环境，使用模拟用户')
     const mockUser = getMockUser()
     try {
       const res = await syncUser(mockUser)
-      // res.data 才是真正的用户信息 (包含 userId)
       const userData = res.data || mockUser
       localStorage.setItem('forumUser', JSON.stringify(userData))
     } catch (e) {
-      console.error('同步用户失败', e)
+      debug.push('同步用户失败: ' + e.message)
     }
   }
+  
+  debugInfo.value = debug.join('\n')
 }
 
 // 加载更多
@@ -211,10 +246,55 @@ function getImages(images) {
 </script>
 
 <style scoped>
+.debug-panel {
+  position: fixed;
+  top: 50px;
+  left: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.85);
+  color: #0f0;
+  padding: 12px;
+  border-radius: 8px;
+  z-index: 9999;
+  font-size: 12px;
+  max-height: 300px;
+  overflow: auto;
+}
+.debug-panel pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.debug-panel small {
+  display: block;
+  margin-top: 8px;
+  color: #999;
+  text-align: center;
+}
+
+/* 导航栏深色主题 */
+@media (prefers-color-scheme: dark) {
+  .nav-bar-dark :deep(.van-nav-bar) {
+    background: #191919;
+  }
+  .nav-bar-dark :deep(.van-nav-bar__title) {
+    color: #f5f5f5;
+  }
+  .nav-bar-dark :deep(.van-icon) {
+    color: #f5f5f5;
+  }
+}
+
 .post-list-page {
   min-height: 100vh;
-  background: var(--bg-color); /* 保持灰色背景 */
-  padding-bottom: 60px; /* 为底部栏留出空间 */
+  background: #f5f5f5;
+  padding-bottom: 60px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .post-list-page {
+    background: #000;
+  }
 }
 
 .access-denied {

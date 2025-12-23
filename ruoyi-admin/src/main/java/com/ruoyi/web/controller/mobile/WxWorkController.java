@@ -161,53 +161,40 @@ public class WxWorkController {
     }
 
     /**
-     * 通过 OAuth code 获取用户身份
-     * 企业微信 OAuth 回调后，前端将 code 发送到此接口
+     * 通过 userid 获取用户信息
+     * 生产环境由上层服务传递 userid，无需 OAuth 流程
      * 
-     * @param code 企业微信 OAuth 授权码
+     * @param userid 企业微信 UserId（由上层服务传递）
      */
     @SuppressWarnings("unchecked")
     @GetMapping("/user/login")
-    public AjaxResult getUserByCode(@RequestParam String code) {
+    public AjaxResult getUserByUserId(@RequestParam String userid) {
         try {
+            if (userid == null || userid.trim().isEmpty()) {
+                return AjaxResult.error("userid 不能为空");
+            }
+
             String accessToken = getAccessToken();
             if (accessToken == null) {
                 return AjaxResult.error("获取 access_token 失败");
             }
 
-            // 1. 通过 code 获取 userid
-            String getuserinfoUrl = "https://qyapi.weixin.qq.com/cgi-bin/auth/getuserinfo?access_token="
-                    + accessToken + "&code=" + code;
-            Map<String, Object> userInfoRes = restTemplate.getForObject(getuserinfoUrl, Map.class);
-
-            if (userInfoRes == null || userInfoRes.get("errcode") == null
-                    || (Integer) userInfoRes.get("errcode") != 0) {
-                log.error("获取用户身份失败: {}", userInfoRes);
-                return AjaxResult.error("获取用户身份失败: " + (userInfoRes != null ? userInfoRes.get("errmsg") : ""));
-            }
-
-            String userId = (String) userInfoRes.get("userid");
-            if (userId == null || userId.isEmpty()) {
-                return AjaxResult.error("用户非企业成员");
-            }
-
-            // 2. 获取用户详细信息
+            // 获取用户详细信息
             String getUserUrl = "https://qyapi.weixin.qq.com/cgi-bin/user/get?access_token="
-                    + accessToken + "&userid=" + userId;
+                    + accessToken + "&userid=" + userid;
             Map<String, Object> userDetailRes = restTemplate.getForObject(getUserUrl, Map.class);
 
             if (userDetailRes == null || userDetailRes.get("errcode") == null
                     || (Integer) userDetailRes.get("errcode") != 0) {
                 log.error("获取用户详情失败: {}", userDetailRes);
-                return AjaxResult.error("获取用户详情失败");
+                return AjaxResult.error("获取用户详情失败: " + (userDetailRes != null ? userDetailRes.get("errmsg") : ""));
             }
 
-            // 3. 返回用户信息
+            // 返回用户信息
             Map<String, Object> result = new HashMap<>();
-            result.put("wxUserid", userId);
+            result.put("wxUserid", userid);
             result.put("nickname", userDetailRes.get("name"));
             result.put("avatar", userDetailRes.get("avatar"));
-            result.put("department", userDetailRes.get("department"));
 
             return AjaxResult.success(result);
         } catch (Exception e) {

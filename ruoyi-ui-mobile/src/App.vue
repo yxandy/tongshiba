@@ -44,6 +44,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  /* 恢复默认，让每个页面自己控制滚动 */
+}
+
 #app {
   min-height: 100vh;
 }

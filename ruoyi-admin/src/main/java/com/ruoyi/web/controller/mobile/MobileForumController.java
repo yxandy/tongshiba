@@ -38,8 +38,7 @@ public class MobileForumController extends BaseController {
         ForumUser user = forumUserService.syncWxUser(
                 request.getWxUserid(),
                 request.getNickname(),
-                request.getAvatar(),
-                request.getDepartment());
+                request.getAvatar());
         return success(user);
     }
 
@@ -259,7 +258,6 @@ public class MobileForumController extends BaseController {
         private String wxUserid;
         private String nickname;
         private String avatar;
-        private String department;
 
         public String getWxUserid() {
             return wxUserid;
@@ -283,14 +281,6 @@ public class MobileForumController extends BaseController {
 
         public void setAvatar(String avatar) {
             this.avatar = avatar;
-        }
-
-        public String getDepartment() {
-            return department;
-        }
-
-        public void setDepartment(String department) {
-            this.department = department;
         }
     }
 

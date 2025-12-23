@@ -288,7 +288,7 @@ function getImages(images) {
 .post-list-page {
   min-height: 100vh;
   background: #f5f5f5;
-  padding-bottom: 60px;
+  padding-bottom: 85px; /* 配合更高的发帖按钮 */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -399,7 +399,7 @@ function getImages(images) {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 50px;
+  height: 75px; /* 增加高度，更容易点击 */
   background: #fff;
   display: flex;
   align-items: center;

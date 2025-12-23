@@ -4,6 +4,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/tongshiba/', // 基础路径
   plugins: [vue()],
   resolve: {
     alias: {

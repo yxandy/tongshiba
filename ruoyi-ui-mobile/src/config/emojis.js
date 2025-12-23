@@ -116,8 +116,8 @@ export const emojiList = [
     { id: '109', name: '转圈', file: '109_转圈.png' }
 ]
 
-// 表情基础路径
-export const emojiBasePath = '/assets/emojis/'
+// 表情基础路径（包含 base path）
+export const emojiBasePath = '/tongshiba/assets/emojis/'
 
 // 根据名称获取表情图片路径
 export function getEmojiPath(name) {

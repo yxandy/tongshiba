@@ -180,6 +180,12 @@ export async function openUserProfile(userId) {
  * @returns {Promise<object|null>} 用户信息或 null
  */
 export async function loginWithWxWork() {
+    // 先解析 URL 参数（无论是否已有缓存用户）
+    const urlParams = new URLSearchParams(window.location.search)
+    const userid = urlParams.get('userid')
+    const parentDept = urlParams.get('parentDept')  // 所属单位
+    const dept = urlParams.get('dept')              // 所在部门
+
     // 1. 检查 localStorage 是否已有用户信息
     const storedUser = localStorage.getItem('forumUser')
     if (storedUser) {
@@ -187,6 +193,21 @@ export async function loginWithWxWork() {
             const user = JSON.parse(storedUser)
             // 检查是否是真实用户（非模拟）
             if (user.wxUserid && user.wxUserid !== 'test_user_001') {
+                // 如果 URL 中有新的 parentDept 或 dept 参数，更新用户数据
+                if (parentDept || dept) {
+                    user.unit = parentDept || user.unit || ''
+                    user.department = dept || user.department || ''
+                    localStorage.setItem('forumUser', JSON.stringify(user))
+                    console.log('[DEBUG] 更新已存在用户的 unit/department:', user)
+
+                    // 清除 URL 中的参数
+                    urlParams.delete('parentDept')
+                    urlParams.delete('dept')
+                    const newUrl = window.location.pathname +
+                        (urlParams.toString() ? '?' + urlParams.toString() : '') +
+                        window.location.hash
+                    window.history.replaceState({}, '', newUrl)
+                }
                 return user
             }
         } catch (e) {
@@ -195,15 +216,6 @@ export async function loginWithWxWork() {
     }
 
     // 2. 检查 URL 中是否有 userid 参数（由上层服务传递）
-    const urlParams = new URLSearchParams(window.location.search)
-    const userid = urlParams.get('userid')
-    const parentDept = urlParams.get('parentDept')  // 所属单位
-    const dept = urlParams.get('dept')              // 所在部门
-
-    console.log('[DEBUG] 当前 URL:', window.location.href)
-    console.log('[DEBUG] URL 参数:', Object.fromEntries(urlParams))
-    console.log('[DEBUG] userid:', userid, 'parentDept:', parentDept, 'dept:', dept)
-
     if (userid) {
         console.log('[DEBUG] 检测到 userid，正在调用后端 API...')
         try {

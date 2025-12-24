@@ -584,12 +584,16 @@ async function submitComment() {
     })
     
     // 本地构造新评论对象，直接追加到列表末尾（无需重新请求API）
+    // 楼层号 = 当前列表中最大楼层号 + 1（考虑到已删除的评论仍占用楼层）
+    const maxFloor = comments.value.length > 0 
+      ? Math.max(...comments.value.map(c => c.floorNum || 0))
+      : 0
     const newComment = {
       commentId: Date.now(), // 临时ID，下次刷新时会用真实ID替换
       postId: post.value.postId,
       content: commentText.value,
       createTime: new Date().toISOString(),
-      floorNum: (post.value.commentCount || 0) + 1, // 楼层号 = 当前评论数 + 1
+      floorNum: maxFloor + 1, // 楼层号 = 最大楼层号 + 1
       user: user, // 当前用户信息
       userId: user.userId // 用于判断是否是楼主
     }
@@ -670,6 +674,13 @@ function previewImage(index) {
 
 // 分享
 function handleShare() {
+  // 显示短暂 loading（企微分享调用后会立即返回）
+  showToast({
+    type: 'loading',
+    message: '正在打开...',
+    forbidClick: true,
+    duration: 800  // 800ms 后自动关闭
+  })
   const url = window.location.href
   shareToUsers(post.value?.title, url)
 }
@@ -680,6 +691,13 @@ function handleOpenUserProfile(wxUserid) {
     showToast('无法获取用户信息')
     return
   }
+  // 显示短暂 loading（企微 openUserProfile 调用后会立即返回，不会等待用户从原生页面返回）
+  showToast({
+    type: 'loading',
+    message: '正在打开...',
+    forbidClick: true,
+    duration: 800  // 800ms 后自动关闭
+  })
   openUserProfile(wxUserid)
 }
 

@@ -7,6 +7,8 @@ public class UserSyncRequest {
     private String wxUserid;
     private String nickname;
     private String avatar;
+    private String unit;
+    private String department;
 
     public String getWxUserid() {
         return wxUserid;
@@ -30,5 +32,21 @@ public class UserSyncRequest {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public String getUnit() {
+        return unit;
+    }
+
+    public void setUnit(String unit) {
+        this.unit = unit;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
     }
 }

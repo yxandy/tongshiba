@@ -197,10 +197,12 @@ export async function loginWithWxWork() {
     // 2. 检查 URL 中是否有 userid 参数（由上层服务传递）
     const urlParams = new URLSearchParams(window.location.search)
     const userid = urlParams.get('userid')
+    const parentDept = urlParams.get('parentDept')  // 所属单位
+    const dept = urlParams.get('dept')              // 所在部门
 
     console.log('[DEBUG] 当前 URL:', window.location.href)
     console.log('[DEBUG] URL 参数:', Object.fromEntries(urlParams))
-    console.log('[DEBUG] userid:', userid)
+    console.log('[DEBUG] userid:', userid, 'parentDept:', parentDept, 'dept:', dept)
 
     if (userid) {
         console.log('[DEBUG] 检测到 userid，正在调用后端 API...')
@@ -214,19 +216,28 @@ export async function loginWithWxWork() {
             console.log('[DEBUG] 后端返回结果:', res)
 
             if (res.code === 200 && res.data) {
-                // 存储用户信息
-                localStorage.setItem('forumUser', JSON.stringify(res.data))
+                // 合并 URL 参数中的单位和部门信息
+                const userData = {
+                    ...res.data,
+                    unit: parentDept || res.data.unit || '',
+                    department: dept || res.data.department || ''
+                }
 
-                // 清除 URL 中的 userid 参数
+                // 存储用户信息
+                localStorage.setItem('forumUser', JSON.stringify(userData))
+
+                // 清除 URL 中的参数
                 urlParams.delete('userid')
+                urlParams.delete('parentDept')
+                urlParams.delete('dept')
                 const newUrl = window.location.pathname +
                     (urlParams.toString() ? '?' + urlParams.toString() : '') +
                     window.location.hash
 
                 window.history.replaceState({}, '', newUrl)
 
-                console.log('用户登录成功:', res.data)
-                return res.data
+                console.log('用户登录成功:', userData)
+                return userData
             } else {
                 console.error('获取用户信息失败:', res)
             }

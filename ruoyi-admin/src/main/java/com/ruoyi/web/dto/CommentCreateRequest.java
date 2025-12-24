@@ -7,6 +7,8 @@ public class CommentCreateRequest {
     private String wxUserid;
     private Long postId;
     private String content;
+    private String userUnit;
+    private String userDept;
 
     public String getWxUserid() {
         return wxUserid;
@@ -30,5 +32,21 @@ public class CommentCreateRequest {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getUserUnit() {
+        return userUnit;
+    }
+
+    public void setUserUnit(String userUnit) {
+        this.userUnit = userUnit;
+    }
+
+    public String getUserDept() {
+        return userDept;
+    }
+
+    public void setUserDept(String userDept) {
+        this.userDept = userDept;
     }
 }

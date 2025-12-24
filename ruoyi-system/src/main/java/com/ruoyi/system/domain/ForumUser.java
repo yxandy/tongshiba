@@ -31,6 +31,10 @@ public class ForumUser extends BaseEntity {
     @Excel(name = "部门")
     private String department;
 
+    /** 所属单位 */
+    @Excel(name = "所属单位")
+    private String unit;
+
     /** 状态（0正常 1禁言） */
     @Excel(name = "状态", readConverterExp = "0=正常,1=禁言")
     private String status;
@@ -81,6 +85,14 @@ public class ForumUser extends BaseEntity {
 
     public void setDepartment(String department) {
         this.department = department;
+    }
+
+    public String getUnit() {
+        return unit;
+    }
+
+    public void setUnit(String unit) {
+        this.unit = unit;
     }
 
     public String getStatus() {

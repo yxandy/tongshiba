@@ -17,6 +17,12 @@ public class ForumPost extends BaseEntity {
     /** 发帖用户ID */
     private Long userId;
 
+    /** 发帖时用户所属单位 */
+    private String userUnit;
+
+    /** 发帖时用户部门 */
+    private String userDept;
+
     /** 帖子标题 */
     @Excel(name = "帖子标题")
     private String title;
@@ -62,6 +68,22 @@ public class ForumPost extends BaseEntity {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getUserUnit() {
+        return userUnit;
+    }
+
+    public void setUserUnit(String userUnit) {
+        this.userUnit = userUnit;
+    }
+
+    public String getUserDept() {
+        return userDept;
+    }
+
+    public void setUserDept(String userDept) {
+        this.userDept = userDept;
     }
 
     public String getTitle() {

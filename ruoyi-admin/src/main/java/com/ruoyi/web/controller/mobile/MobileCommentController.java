@@ -69,6 +69,8 @@ public class MobileCommentController extends BaseController {
         ForumComment comment = new ForumComment();
         comment.setPostId(request.getPostId());
         comment.setUserId(user.getUserId());
+        comment.setUserUnit(request.getUserUnit());
+        comment.setUserDept(request.getUserDept());
         comment.setContent(request.getContent());
 
         return toAjax(forumCommentService.insertForumComment(comment));

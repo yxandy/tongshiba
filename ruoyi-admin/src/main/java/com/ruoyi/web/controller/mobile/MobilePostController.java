@@ -71,6 +71,8 @@ public class MobilePostController extends BaseController {
 
         ForumPost post = new ForumPost();
         post.setUserId(user.getUserId());
+        post.setUserUnit(request.getUserUnit());
+        post.setUserDept(request.getUserDept());
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
         post.setImages(request.getImages());

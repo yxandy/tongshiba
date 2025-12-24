@@ -28,7 +28,9 @@ public class MobileUserController extends BaseController {
         ForumUser user = forumUserService.syncWxUser(
                 request.getWxUserid(),
                 request.getNickname(),
-                request.getAvatar());
+                request.getAvatar(),
+                request.getUnit(),
+                request.getDepartment());
         return success(user);
     }
 

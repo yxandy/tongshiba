@@ -5,6 +5,8 @@
     <resultMap type="com.ruoyi.system.domain.ForumPost" id="ForumPostResult">
         <result property="postId" column="post_id" />
         <result property="userId" column="user_id" />
+        <result property="userUnit" column="user_unit" />
+        <result property="userDept" column="user_dept" />
         <result property="title" column="title" />
         <result property="content" column="content" />
         <result property="images" column="images" />
@@ -28,12 +30,12 @@
     </resultMap>
 
     <sql id="selectForumPostVo">
-        select post_id, user_id, title, content, images, view_count, comment_count, is_locked, del_flag, create_time, update_time
+        select post_id, user_id, user_unit, user_dept, title, content, images, view_count, comment_count, is_locked, del_flag, create_time, update_time
         from forum_post
     </sql>
 
     <sql id="selectForumPostWithUser">
-        select p.post_id, p.user_id, p.title, p.content, p.images, p.view_count, p.comment_count, p.is_locked, p.del_flag, p.create_time, p.update_time, p.last_reply_time,
+        select p.post_id, p.user_id, p.user_unit, p.user_dept, p.title, p.content, p.images, p.view_count, p.comment_count, p.is_locked, p.del_flag, p.create_time, p.update_time, p.last_reply_time,
                u.user_id as u_user_id, u.wx_userid as u_wx_userid, u.nickname as u_nickname, u.avatar as u_avatar, u.department as u_department
         from forum_post p
         left join forum_user u on p.user_id = u.user_id
@@ -78,6 +80,8 @@
         insert into forum_post
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="userId != null">user_id,</if>
+            <if test="userUnit != null">user_unit,</if>
+            <if test="userDept != null">user_dept,</if>
             <if test="title != null and title != ''">title,</if>
             <if test="content != null">content,</if>
             <if test="images != null">images,</if>
@@ -89,6 +93,8 @@
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="userId != null">#{userId},</if>
+            <if test="userUnit != null">#{userUnit},</if>
+            <if test="userDept != null">#{userDept},</if>
             <if test="title != null and title != ''">#{title},</if>
             <if test="content != null">#{content},</if>
             <if test="images != null">#{images},</if>

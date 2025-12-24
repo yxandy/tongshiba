@@ -8,6 +8,8 @@ public class PostCreateRequest {
     private String title;
     private String content;
     private String images;
+    private String userUnit;
+    private String userDept;
 
     public String getWxUserid() {
         return wxUserid;
@@ -39,5 +41,21 @@ public class PostCreateRequest {
 
     public void setImages(String images) {
         this.images = images;
+    }
+
+    public String getUserUnit() {
+        return userUnit;
+    }
+
+    public void setUserUnit(String userUnit) {
+        this.userUnit = userUnit;
+    }
+
+    public String getUserDept() {
+        return userDept;
+    }
+
+    public void setUserDept(String userDept) {
+        this.userDept = userDept;
     }
 }

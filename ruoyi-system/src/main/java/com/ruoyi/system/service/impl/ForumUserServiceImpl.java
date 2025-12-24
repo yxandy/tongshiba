@@ -52,12 +52,14 @@ public class ForumUserServiceImpl implements IForumUserService {
 
     @Override
     @Transactional
-    public ForumUser syncWxUser(String wxUserid, String nickname, String avatar) {
+    public ForumUser syncWxUser(String wxUserid, String nickname, String avatar, String unit, String department) {
         ForumUser existingUser = forumUserMapper.selectForumUserByWxUserid(wxUserid);
         if (existingUser != null) {
             // 更新用户信息
             existingUser.setNickname(nickname);
             existingUser.setAvatar(avatar);
+            existingUser.setUnit(unit);
+            existingUser.setDepartment(department);
             forumUserMapper.updateForumUser(existingUser);
             return existingUser;
         } else {
@@ -66,6 +68,8 @@ public class ForumUserServiceImpl implements IForumUserService {
             newUser.setWxUserid(wxUserid);
             newUser.setNickname(nickname);
             newUser.setAvatar(avatar);
+            newUser.setUnit(unit);
+            newUser.setDepartment(department);
             newUser.setStatus("0");
             forumUserMapper.insertForumUser(newUser);
             return newUser;

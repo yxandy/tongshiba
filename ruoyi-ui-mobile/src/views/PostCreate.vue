@@ -404,7 +404,9 @@ async function submitPost() {
       wxUserid: user.wxUserid,
       title: title.value.trim(),
       content: content.value.trim(),
-      images: imageList.value.length > 0 ? JSON.stringify(imageList.value) : ''
+      images: imageList.value.length > 0 ? JSON.stringify(imageList.value) : '',
+      userUnit: user.unit || '',
+      userDept: user.department || ''
     })
     
     // 如果返回成功

@@ -573,6 +573,8 @@ async function submitComment() {
       postId: post.value.postId,
       wxUserid: user.wxUserid,  // 后端需要 wxUserid
       content: commentText.value,
+      userUnit: user.unit || '',
+      userDept: user.department || ''
     })
     
     // 在屏幕中间显示评论成功

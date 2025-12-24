@@ -20,6 +20,12 @@ public class ForumComment extends BaseEntity {
     /** 评论用户ID */
     private Long userId;
 
+    /** 评论时用户所属单位 */
+    private String userUnit;
+
+    /** 评论时用户部门 */
+    private String userDept;
+
     /** 评论内容 */
     @Excel(name = "评论内容")
     private String content;
@@ -59,6 +65,22 @@ public class ForumComment extends BaseEntity {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getUserUnit() {
+        return userUnit;
+    }
+
+    public void setUserUnit(String userUnit) {
+        this.userUnit = userUnit;
+    }
+
+    public String getUserDept() {
+        return userDept;
+    }
+
+    public void setUserDept(String userDept) {
+        this.userDept = userDept;
     }
 
     public String getContent() {

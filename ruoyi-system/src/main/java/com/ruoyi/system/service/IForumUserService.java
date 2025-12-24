@@ -37,7 +37,7 @@ public interface IForumUserService {
     /**
      * 同步企业微信用户（如存在则更新，不存在则新增）
      */
-    public ForumUser syncWxUser(String wxUserid, String nickname, String avatar);
+    public ForumUser syncWxUser(String wxUserid, String nickname, String avatar, String unit, String department);
 
     /**
      * 禁言用户

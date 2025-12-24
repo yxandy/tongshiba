@@ -47,7 +47,7 @@
 
         <!-- 底部元信息 (作者 · 时间 · 删除) -->
         <div class="post-meta-footer">
-          <span class="meta-author">{{ post.user?.nickname || '匿名用户' }}</span>
+          <span class="meta-author" @click="handleOpenUserProfile(post.user?.wxUserid)" style="cursor: pointer;">{{ post.user?.nickname || '匿名用户' }}</span>
           <span class="meta-separator">·</span>
           <span class="meta-time">{{ formatTime(post.createTime) }}</span>
           <span v-if="post.isLocked === '1'" class="locked">
@@ -102,6 +102,8 @@
               height="36"
               radius="4"
               :src="comment.user?.avatar || defaultAvatar"
+              @click="handleOpenUserProfile(comment.user?.wxUserid)"
+              style="cursor: pointer;"
             />
             <div class="comment-content">
               <div class="comment-header">
@@ -207,7 +209,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showImagePreview, showConfirmDialog } from 'vant'
 import { getPostDetail, getCommentList, createComment, syncUser, checkFollow, followPost, unfollowPost, deletePost } from '@/api/forum'
-import { isWxWorkEnv, getAccessDeniedMessage, shareToUsers, getMockUser } from '@/utils/wxwork'
+import { isWxWorkEnv, getAccessDeniedMessage, shareToUsers, openUserProfile, getMockUser } from '@/utils/wxwork'
 import { emojiList, emojiBasePath, renderEmojis, getRecentEmojis, addRecentEmoji } from '@/config/emojis'
 
 const route = useRoute()
@@ -666,6 +668,15 @@ function previewImage(index) {
 function handleShare() {
   const url = window.location.href
   shareToUsers(post.value?.title, url)
+}
+
+// 点击头像打开用户个人信息页
+function handleOpenUserProfile(wxUserid) {
+  if (!wxUserid) {
+    showToast('无法获取用户信息')
+    return
+  }
+  openUserProfile(wxUserid)
 }
 
 // 返回

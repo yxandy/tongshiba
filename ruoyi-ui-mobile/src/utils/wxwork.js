@@ -32,27 +32,39 @@ export function getMockUser() {
 // JS-SDK 是否已初始化
 let sdkReady = false
 let sdkConfig = null
+let lastSignedUrl = '' // 记录上次签名使用的 URL
 
 /**
  * 初始化企业微信 JS-SDK
+ * @param {boolean} forceReinit 是否强制重新初始化
  * @returns {Promise<boolean>}
  */
-export async function initWxWorkJsSdk() {
-    if (sdkReady) return true
+export async function initWxWorkJsSdk(forceReinit = false) {
     if (!isWxWorkEnv()) {
         console.log('非企业微信环境，跳过 JS-SDK 初始化')
         return false
     }
 
-    try {
-        // 获取当前页面 URL（不含 hash）
-        const url = window.location.href.split('#')[0]
+    // 获取当前页面 URL（不含 hash）
+    const currentUrl = window.location.href.split('#')[0]
 
+    // 如果 URL 没变且已初始化，直接返回
+    if (sdkReady && lastSignedUrl === currentUrl && !forceReinit) {
+        return true
+    }
+
+    // URL 变化或强制重新初始化，需要重新获取签名
+    if (sdkReady && lastSignedUrl !== currentUrl) {
+        console.log('[JS-SDK] URL 变化，重新获取签名')
+        sdkReady = false
+    }
+
+    try {
         // 调用后端获取签名
         const res = await request({
             url: '/mobile/wxwork/jsapi/signature',
             method: 'get',
-            params: { url }
+            params: { url: currentUrl }
         })
 
         if (res.code !== 200 || !res.data) {
@@ -61,6 +73,7 @@ export async function initWxWorkJsSdk() {
         }
 
         sdkConfig = res.data
+        lastSignedUrl = currentUrl // 记录本次签名的 URL
 
         // 调用 wx.config 初始化
         return new Promise((resolve) => {
@@ -71,17 +84,18 @@ export async function initWxWorkJsSdk() {
                 timestamp: sdkConfig.timestamp,
                 nonceStr: sdkConfig.nonceStr,
                 signature: sdkConfig.signature,
-                jsApiList: ['shareAppMessage', 'onMenuShareAppMessage']
+                jsApiList: ['shareAppMessage', 'onMenuShareAppMessage', 'openUserProfile']
             })
 
             wx.ready(() => {
-                console.log('企业微信 JS-SDK 初始化成功')
+                console.log('企业微信 JS-SDK 初始化成功, URL:', currentUrl)
                 sdkReady = true
                 resolve(true)
             })
 
             wx.error((err) => {
                 console.error('企业微信 JS-SDK 初始化失败:', err)
+                sdkReady = false
                 resolve(false)
             })
         })
@@ -106,13 +120,11 @@ export async function shareToUsers(title, link, desc = '', imgUrl = '') {
         return
     }
 
-    // 确保 SDK 已初始化
-    if (!sdkReady) {
-        const success = await initWxWorkJsSdk()
-        if (!success) {
-            console.error('JS-SDK 未初始化，无法分享')
-            return
-        }
+    // 每次都检查 SDK 状态（内部会判断 URL 是否变化）
+    const success = await initWxWorkJsSdk()
+    if (!success) {
+        console.error('JS-SDK 初始化失败，无法分享')
+        return
     }
 
     // 调用企业微信分享接口
@@ -126,6 +138,38 @@ export async function shareToUsers(title, link, desc = '', imgUrl = '') {
             console.log('分享成功')
         } else {
             console.log('分享结果:', res)
+        }
+    })
+}
+
+/**
+ * 打开用户个人信息页
+ * @param {string} userId 企业微信用户ID (wxUserid)
+ */
+export async function openUserProfile(userId) {
+    // 开发环境模拟
+    if (!isWxWorkEnv()) {
+        console.log('模拟打开用户信息:', userId)
+        alert(`[模拟] 打开用户信息页\n用户ID: ${userId}`)
+        return
+    }
+
+    // 每次都检查 SDK 状态（内部会判断 URL 是否变化）
+    const success = await initWxWorkJsSdk()
+    if (!success) {
+        console.error('JS-SDK 初始化失败，无法打开用户信息')
+        return
+    }
+
+    // 调用企业微信接口打开个人信息页
+    wx.invoke('openUserProfile', {
+        type: 1, // 1 表示企业成员
+        userid: userId
+    }, (res) => {
+        if (res.err_msg === 'openUserProfile:ok') {
+            console.log('打开用户信息成功')
+        } else {
+            console.log('打开用户信息结果:', res)
         }
     })
 }
@@ -226,6 +270,7 @@ export default {
     getMockUser,
     initWxWorkJsSdk,
     shareToUsers,
+    openUserProfile,
     loginWithWxWork,
     getCurrentUser
 }

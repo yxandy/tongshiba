@@ -576,22 +576,29 @@ async function submitComment() {
       message: '评论成功',
       position: 'middle'
     })
-    commentText.value = ''
     
-    // 刷新评论列表
-    commentPageNum.value = 1
-    commentFinished.value = false
-    comments.value = [] // 必须清空，否则 vant list 会有问题
-    await loadComments() 
+    // 本地构造新评论对象，直接追加到列表末尾（无需重新请求API）
+    const newComment = {
+      commentId: Date.now(), // 临时ID，下次刷新时会用真实ID替换
+      postId: post.value.postId,
+      content: commentText.value,
+      createTime: new Date().toISOString(),
+      floorNum: (post.value.commentCount || 0) + 1, // 楼层号 = 当前评论数 + 1
+      user: user, // 当前用户信息
+      userId: user.userId // 用于判断是否是楼主
+    }
+    comments.value.push(newComment)
+    
+    // 清空输入框
+    commentText.value = ''
     
     // 更新帖子评论数
     if (post.value) {
       post.value.commentCount = (post.value.commentCount || 0) + 1
     }
     
-    // 滚动到评论底部（使用 nextTick 确保 DOM 更新）
+    // 滚动到新评论（使用 nextTick 确保 DOM 更新）
     await nextTick()
-    // 再等一点时间确保渲染完成
     setTimeout(() => {
       const page = document.querySelector('.post-detail-page')
       const allComments = document.querySelectorAll('.comment-item')
@@ -600,7 +607,6 @@ async function submitComment() {
       if (page && lastComment) {
         const pageRect = page.getBoundingClientRect()
         const commentRect = lastComment.getBoundingClientRect()
-        // 计算相对于滚动容器的目标位置
         const currentScrollTop = page.scrollTop
         const targetScrollTop = currentScrollTop + commentRect.top - pageRect.top - 100
         page.scrollTo({ top: targetScrollTop, behavior: 'smooth' })

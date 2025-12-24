@@ -175,6 +175,34 @@ public class MobileForumController extends BaseController {
         return toAjax(forumCommentService.insertForumComment(comment));
     }
 
+    /**
+     * 删除评论 (评论作者可删除)
+     */
+    @PostMapping("/comment/delete")
+    public AjaxResult deleteComment(@RequestBody CommentDeleteRequest request) {
+        ForumUser user = forumUserService.selectForumUserByWxUserid(request.getWxUserid());
+        if (user == null) {
+            return error("用户不存在");
+        }
+
+        ForumComment comment = forumCommentService.selectForumCommentById(request.getCommentId());
+        if (comment == null) {
+            return error("评论不存在");
+        }
+
+        // 权限检查: 评论作者可删除
+        boolean isAuthor = user.getUserId().equals(comment.getUserId());
+        boolean isAdmin = "1".equals(user.getIsAdmin());
+
+        if (!isAuthor && !isAdmin) {
+            return error("您没有权限删除此评论");
+        }
+
+        // 执行逻辑删除，记录删除者
+        return toAjax(
+                forumCommentService.deleteForumCommentByIdWithDeletedBy(request.getCommentId(), user.getUserId()));
+    }
+
     // ==================== 关注帖子相关接口 ====================
 
     @Autowired
@@ -398,6 +426,27 @@ public class MobileForumController extends BaseController {
 
         public void setPostId(Long postId) {
             this.postId = postId;
+        }
+    }
+
+    public static class CommentDeleteRequest {
+        private String wxUserid;
+        private Long commentId;
+
+        public String getWxUserid() {
+            return wxUserid;
+        }
+
+        public void setWxUserid(String wxUserid) {
+            this.wxUserid = wxUserid;
+        }
+
+        public Long getCommentId() {
+            return commentId;
+        }
+
+        public void setCommentId(Long commentId) {
+            this.commentId = commentId;
         }
     }
 }

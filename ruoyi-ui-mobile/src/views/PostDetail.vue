@@ -115,6 +115,8 @@
                 <span class="floor-num">{{ comment.floorNum }}楼</span>
                 <span class="meta-dot">·</span>
                 <span class="time">{{ formatTimeDayTime(comment.createTime) }}</span>
+                <!-- 删除按钮：仅评论作者可见 -->
+                <span v-if="canDeleteComment(comment)" class="comment-delete-btn" @click="confirmDeleteComment(comment)">删除</span>
               </div>
             </div>
           </div>
@@ -208,7 +210,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showImagePreview, showConfirmDialog } from 'vant'
-import { getPostDetail, getCommentList, createComment, syncUser, checkFollow, followPost, unfollowPost, deletePost } from '@/api/forum'
+import { getPostDetail, getCommentList, createComment, deleteComment, syncUser, checkFollow, followPost, unfollowPost, deletePost } from '@/api/forum'
 import { isWxWorkEnv, getAccessDeniedMessage, shareToUsers, openUserProfile, getMockUser } from '@/utils/wxwork'
 import { emojiList, emojiBasePath, renderEmojis, getRecentEmojis, addRecentEmoji } from '@/config/emojis'
 
@@ -679,6 +681,57 @@ function handleOpenUserProfile(wxUserid) {
   openUserProfile(wxUserid)
 }
 
+// 判断当前用户是否可以删除该评论（仅评论作者可删）
+function canDeleteComment(comment) {
+  const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
+  if (!user.wxUserid) return false
+  // 评论作者可以删除自己的评论
+  return comment.user?.wxUserid === user.wxUserid
+}
+
+// 确认删除评论
+async function confirmDeleteComment(comment) {
+  try {
+    await showConfirmDialog({
+      title: '确认删除',
+      message: '删除后无法恢复，确定要删除这条评论吗？',
+    })
+    
+    // 用户确认删除
+    const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
+    if (!user.wxUserid) {
+      showToast('请先登录')
+      return
+    }
+    
+    showToast({ type: 'loading', message: '删除中...', forbidClick: true })
+    
+    await deleteComment({ 
+      commentId: comment.commentId, 
+      wxUserid: user.wxUserid  // 记录删除者
+    })
+    
+    showToast('删除成功')
+    
+    // 从本地列表中移除该评论
+    const index = comments.value.findIndex(c => c.commentId === comment.commentId)
+    if (index > -1) {
+      comments.value.splice(index, 1)
+    }
+    
+    // 更新帖子评论数
+    if (post.value && post.value.commentCount > 0) {
+      post.value.commentCount--
+    }
+  } catch (e) {
+    // 用户取消或请求失败
+    if (e !== 'cancel') {
+      console.error('删除评论失败', e)
+      showToast('删除失败')
+    }
+  }
+}
+
 // 返回
 function goBack() {
   router.back()
@@ -946,6 +999,13 @@ function formatTime(timeStr) {
 
 .meta-dot {
   margin: 0 4px;
+}
+
+.comment-delete-btn {
+  color: #576b95;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 10px;
 }
 
 .comment-text {

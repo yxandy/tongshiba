@@ -78,4 +78,16 @@ public class ForumCommentServiceImpl implements IForumCommentService {
         }
         return forumCommentMapper.deleteForumCommentByIds(commentIds);
     }
+
+    @Override
+    @Transactional
+    public int deleteForumCommentByIdWithDeletedBy(Long commentId, Long deletedBy) {
+        ForumComment comment = forumCommentMapper.selectForumCommentById(commentId);
+        if (comment != null) {
+            // 减少帖子评论数
+            forumPostMapper.decrementCommentCount(comment.getPostId());
+        }
+        // 执行逻辑删除并记录删除者
+        return forumCommentMapper.logicalDeleteById(commentId, deletedBy);
+    }
 }

@@ -107,4 +107,8 @@
         update forum_comment set del_flag = '1' where post_id = #{postId}
     </update>
 
+    <update id="logicalDeleteById">
+        update forum_comment set del_flag = '1', deleted_by = #{deletedBy} where comment_id = #{commentId}
+    </update>
+
 </mapper>

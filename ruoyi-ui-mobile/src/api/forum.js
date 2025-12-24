@@ -114,3 +114,12 @@ export function deletePost(data) {
         data
     })
 }
+
+// 删除评论
+export function deleteComment(data) {
+    return request({
+        url: '/mobile/forum/comment/delete',
+        method: 'post',
+        data  // { commentId, wxUserid (删除者) }
+    })
+}

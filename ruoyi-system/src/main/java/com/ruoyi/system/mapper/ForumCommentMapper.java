@@ -1,6 +1,7 @@
 package com.ruoyi.system.mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 import com.ruoyi.system.domain.ForumComment;
 
 /**
@@ -53,4 +54,9 @@ public interface ForumCommentMapper {
      * 根据帖子ID删除评论
      */
     public int deleteForumCommentByPostId(Long postId);
+
+    /**
+     * 逻辑删除评论并记录删除者
+     */
+    public int logicalDeleteById(@Param("commentId") Long commentId, @Param("deletedBy") Long deletedBy);
 }

@@ -38,4 +38,9 @@ public interface IForumCommentService {
      * 批量删除评论
      */
     public int deleteForumCommentByIds(Long[] commentIds);
+
+    /**
+     * 逻辑删除评论并记录删除者
+     */
+    public int deleteForumCommentByIdWithDeletedBy(Long commentId, Long deletedBy);
 }

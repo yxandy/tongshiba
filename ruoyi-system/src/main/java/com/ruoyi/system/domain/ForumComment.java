@@ -31,6 +31,9 @@ public class ForumComment extends BaseEntity {
     /** 删除标志（0存在 1删除） */
     private String delFlag;
 
+    /** 删除者用户ID */
+    private Long deletedBy;
+
     /** 评论用户信息（非数据库字段） */
     private ForumUser user;
 
@@ -80,6 +83,14 @@ public class ForumComment extends BaseEntity {
 
     public void setDelFlag(String delFlag) {
         this.delFlag = delFlag;
+    }
+
+    public Long getDeletedBy() {
+        return deletedBy;
+    }
+
+    public void setDeletedBy(Long deletedBy) {
+        this.deletedBy = deletedBy;
     }
 
     public ForumUser getUser() {

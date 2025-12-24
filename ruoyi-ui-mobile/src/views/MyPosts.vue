@@ -3,11 +3,9 @@
     <!-- 顶部导航 -->
     <van-nav-bar 
       title="发过的帖子" 
-      left-text="返回"
-      left-arrow 
       fixed 
       placeholder
-      @click-left="goBack"
+      class="nav-bar-dark"
     />
 
     <!-- 空状态 -->
@@ -124,8 +122,14 @@ function goBack() {
 <style scoped>
 .my-posts-page {
   min-height: 100vh;
-  background: var(--bg-color, #f5f5f5);
+  background: #f5f5f5;
   padding-bottom: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .my-posts-page {
+    background: #000;
+  }
 }
 
 .empty-state {
@@ -148,28 +152,48 @@ function goBack() {
 
 .post-card {
   background: #fff;
-  padding: 16px;
-  margin: 10px 0;
+  padding: 16px 16px 12px 16px;
+  margin-bottom: 10px;
   position: relative;
 }
 
-.post-card:first-child {
-  margin-top: 0;
+@media (prefers-color-scheme: dark) {
+  .post-card {
+    background: #191919;
+  }
 }
 
 .post-title {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: #000;
   line-height: 1.4;
   margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+@media (prefers-color-scheme: dark) {
+  .post-title {
+    color: #f5f5f5;
+  }
 }
 
 .post-preview {
-  font-size: 14px;
+  font-size: 15px;
   color: #666;
-  line-height: 1.5;
+  line-height: 1.6;
   margin-bottom: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .post-footer {
@@ -182,6 +206,12 @@ function goBack() {
 
 .time {
   color: #999;
+}
+
+@media (prefers-color-scheme: dark) {
+  .time {
+    color: #7d90a9;
+  }
 }
 
 .stats {
@@ -204,17 +234,5 @@ function goBack() {
   display: flex;
   align-items: center;
   gap: 2px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .post-card {
-    background: #2c2c2c;
-  }
-  .post-title {
-    color: #e5e5e5;
-  }
-  .post-preview {
-    color: #999;
-  }
 }
 </style>

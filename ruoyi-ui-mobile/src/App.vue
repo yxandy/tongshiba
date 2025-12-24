@@ -52,6 +52,20 @@ onMounted(() => {
     background-color: var(--bg-color);
     color: var(--text-primary);
   }
+  
+  /* Vant 导航栏深色适配 */
+  .nav-bar-dark,
+  .van-nav-bar {
+    background: #191919 !important;
+  }
+  .nav-bar-dark .van-nav-bar__title,
+  .van-nav-bar__title {
+    color: #e5e5e5 !important;
+  }
+  .nav-bar-dark .van-nav-bar__text,
+  .van-nav-bar__text {
+    color: #e5e5e5 !important;
+  }
 }
 
 * {

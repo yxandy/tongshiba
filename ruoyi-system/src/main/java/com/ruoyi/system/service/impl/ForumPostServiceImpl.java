@@ -79,4 +79,12 @@ public class ForumPostServiceImpl implements IForumPostService {
     public int incrementViewCount(Long postId) {
         return forumPostMapper.incrementViewCount(postId);
     }
+
+    @Override
+    public int restorePost(Long postId) {
+        ForumPost post = new ForumPost();
+        post.setPostId(postId);
+        post.setDelFlag("0");
+        return forumPostMapper.updateForumPost(post);
+    }
 }

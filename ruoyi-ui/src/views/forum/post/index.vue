@@ -14,10 +14,17 @@
       <el-form-item label="部门" prop="userDept">
         <el-input v-model="queryParams.userDept" placeholder="请输入发帖时部门" clearable style="width: 150px" @keyup.enter.native="handleQuery" />
       </el-form-item>
-      <el-form-item label="状态" prop="isLocked">
-        <el-select v-model="queryParams.isLocked" placeholder="锁定状态" clearable style="width: 120px">
+      <el-form-item label="锁定状态" prop="isLocked">
+        <el-select v-model="queryParams.isLocked" placeholder="锁定状态" clearable style="width: 100px">
           <el-option label="正常" value="0" />
           <el-option label="已锁定" value="1" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="删除状态" prop="delFlag">
+        <el-select v-model="queryParams.delFlag" placeholder="删除状态" style="width: 100px">
+          <el-option label="正常" value="0" />
+          <el-option label="已删除" value="1" />
+          <el-option label="全部" value="2" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -50,20 +57,28 @@
       <el-table-column label="发帖时部门" prop="userDept" width="120" :show-overflow-tooltip="true" />
       <el-table-column label="浏览" prop="viewCount" width="70" align="center" />
       <el-table-column label="评论" prop="commentCount" width="70" align="center" />
-      <el-table-column label="状态" prop="isLocked" width="80" align="center">
+      <el-table-column label="锁定" prop="isLocked" width="70" align="center">
         <template slot-scope="scope">
-          <el-tag :type="scope.row.isLocked === '1' ? 'danger' : 'success'">
+          <el-tag :type="scope.row.isLocked === '1' ? 'danger' : 'success'" size="small">
             {{ scope.row.isLocked === '1' ? '已锁定' : '正常' }}
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="删除" prop="delFlag" width="70" align="center">
+        <template slot-scope="scope">
+          <el-tag :type="scope.row.delFlag === '1' ? 'info' : ''" size="small">
+            {{ scope.row.delFlag === '1' ? '已删除' : '正常' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="发布时间" prop="createTime" width="160" />
-      <el-table-column label="操作" width="180" fixed="right">
+      <el-table-column label="操作" width="200" fixed="right">
         <template slot-scope="scope">
           <el-button size="mini" type="text" @click="handleView(scope.row)">查看</el-button>
-          <el-button size="mini" type="text" v-if="scope.row.isLocked === '0'" @click="handleLock(scope.row)" v-hasPermi="['forum:post:lock']">锁定</el-button>
-          <el-button size="mini" type="text" v-else @click="handleUnlock(scope.row)" v-hasPermi="['forum:post:lock']">解锁</el-button>
-          <el-button size="mini" type="text" style="color: #f56c6c" @click="handleDelete(scope.row)" v-hasPermi="['forum:post:remove']">删除</el-button>
+          <el-button size="mini" type="text" v-if="scope.row.isLocked === '0' && scope.row.delFlag !== '1'" @click="handleLock(scope.row)" v-hasPermi="['forum:post:lock']">锁定</el-button>
+          <el-button size="mini" type="text" v-if="scope.row.isLocked === '1' && scope.row.delFlag !== '1'" @click="handleUnlock(scope.row)" v-hasPermi="['forum:post:lock']">解锁</el-button>
+          <el-button size="mini" type="text" v-if="scope.row.delFlag !== '1'" style="color: #f56c6c" @click="handleDelete(scope.row)" v-hasPermi="['forum:post:remove']">删除</el-button>
+          <el-button size="mini" type="text" v-if="scope.row.delFlag === '1'" style="color: #67c23a" @click="handleRestore(scope.row)" v-hasPermi="['forum:post:remove']">恢复</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -103,7 +118,7 @@
 </template>
 
 <script>
-import { listPost, getPost, delPost, lockPost, unlockPost } from '@/api/forum/post'
+import { listPost, getPost, delPost, lockPost, unlockPost, restorePost } from '@/api/forum/post'
 
 export default {
   name: 'ForumPost',
@@ -125,7 +140,8 @@ export default {
         'user.nickname': undefined,
         userUnit: undefined,
         userDept: undefined,
-        isLocked: undefined
+        isLocked: undefined,
+        delFlag: '0'
       }
     }
   },
@@ -158,6 +174,7 @@ export default {
     resetQuery() {
       this.resetForm('queryForm')
       this.queryParams['user.nickname'] = undefined
+      this.queryParams.delFlag = '0'
       this.handleQuery()
     },
     handleSelectionChange(selection) {
@@ -194,6 +211,14 @@ export default {
       }).then(() => {
         this.getList()
         this.$modal.msgSuccess('删除成功')
+      }).catch(() => {})
+    },
+    handleRestore(row) {
+      this.$modal.confirm('确定要恢复帖子"' + row.title + '"吗？').then(() => {
+        return restorePost(row.postId)
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess('恢复成功')
       }).catch(() => {})
     }
   }

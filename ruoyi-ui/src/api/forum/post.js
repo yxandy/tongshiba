@@ -40,3 +40,11 @@ export function unlockPost(postId) {
         method: 'put'
     })
 }
+
+// 恢复已删除帖子
+export function restorePost(postId) {
+    return request({
+        url: '/forum/post/restore/' + postId,
+        method: 'put'
+    })
+}

@@ -53,4 +53,9 @@ public interface IForumPostService {
      * 增加浏览次数
      */
     public int incrementViewCount(Long postId);
+
+    /**
+     * 恢复已删除的帖子
+     */
+    public int restorePost(Long postId);
 }

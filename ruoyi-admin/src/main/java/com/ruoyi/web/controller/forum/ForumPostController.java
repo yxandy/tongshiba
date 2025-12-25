@@ -72,4 +72,14 @@ public class ForumPostController extends BaseController {
     public AjaxResult unlock(@PathVariable Long postId) {
         return toAjax(forumPostService.unlockPost(postId));
     }
+
+    /**
+     * 恢复已删除的帖子
+     */
+    @PreAuthorize("@ss.hasPermi('forum:post:remove')")
+    @Log(title = "帖子管理", businessType = BusinessType.UPDATE)
+    @PutMapping("/restore/{postId}")
+    public AjaxResult restore(@PathVariable Long postId) {
+        return toAjax(forumPostService.restorePost(postId));
+    }
 }

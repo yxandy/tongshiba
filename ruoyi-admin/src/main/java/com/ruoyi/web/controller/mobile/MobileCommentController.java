@@ -12,6 +12,7 @@ import com.ruoyi.system.domain.ForumUser;
 import com.ruoyi.system.service.IForumCommentService;
 import com.ruoyi.system.service.IForumPostService;
 import com.ruoyi.system.service.IForumUserService;
+import com.ruoyi.system.service.IForumCommentLogService;
 import com.ruoyi.web.dto.CommentCreateRequest;
 import com.ruoyi.web.dto.CommentDeleteRequest;
 
@@ -32,6 +33,9 @@ public class MobileCommentController extends BaseController {
 
     @Autowired
     private IForumUserService forumUserService;
+
+    @Autowired
+    private IForumCommentLogService forumCommentLogService;
 
     /**
      * 获取帖子评论列表
@@ -100,7 +104,16 @@ public class MobileCommentController extends BaseController {
         }
 
         // 执行逻辑删除，记录删除者
-        return toAjax(
-                forumCommentService.deleteForumCommentByIdWithDeletedBy(request.getCommentId(), user.getUserId()));
+        int result = forumCommentService.deleteForumCommentByIdWithDeletedBy(request.getCommentId(), user.getUserId());
+        if (result > 0) {
+            // 记录评论删除日志
+            forumCommentLogService.logDelete(
+                    comment.getPostId(),
+                    request.getCommentId(),
+                    comment.getFloorNum(),
+                    comment.getContent(),
+                    user.getNickname());
+        }
+        return toAjax(result);
     }
 }

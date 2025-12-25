@@ -24,3 +24,11 @@ export function restoreComment(commentId) {
         method: 'put'
     })
 }
+
+// 获取评论删除日志
+export function getCommentLog(postId) {
+    return request({
+        url: '/forum/comment/log/' + postId,
+        method: 'get'
+    })
+}

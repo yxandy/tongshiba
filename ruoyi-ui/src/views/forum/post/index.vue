@@ -127,7 +127,10 @@
         <!-- 评论管理区域 -->
         <div class="comment-section">
           <div class="comment-header">
-            <h4>评论列表（共 {{ detailData.commentCount }} 条）</h4>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <h4 style="margin: 0;">评论列表（共 {{ detailData.commentCount }} 条）</h4>
+              <el-button size="mini" type="text" @click="handleViewCommentLog">删除日志</el-button>
+            </div>
             <el-select v-model="commentDelFlag" placeholder="删除状态" size="mini" style="width: 100px" @change="loadComments">
               <el-option label="正常" value="0" />
               <el-option label="已删除" value="1" />
@@ -190,12 +193,25 @@
       </el-table>
       <el-empty v-if="logList.length === 0 && !logLoading" description="暂无操作日志" />
     </el-dialog>
+
+    <!-- 评论删除日志弹窗 -->
+    <el-dialog title="评论删除日志" :visible.sync="commentLogDialogVisible" width="700px" append-to-body>
+      <el-table v-loading="commentLogLoading" :data="commentLogList" size="small" max-height="400">
+        <el-table-column label="时间" prop="operateTime" width="160" />
+        <el-table-column label="楼层" width="60" align="center">
+          <template slot-scope="scope">{{ scope.row.floorNum }}#</template>
+        </el-table-column>
+        <el-table-column label="评论内容" prop="contentSummary" :show-overflow-tooltip="true" />
+        <el-table-column label="删除人" prop="operatorName" width="100" />
+      </el-table>
+      <el-empty v-if="commentLogList.length === 0 && !commentLogLoading" description="暂无删除日志" />
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { listPost, getPost, delPost, lockPost, unlockPost, restorePost, pinPost, unpinPost, getPostLog } from '@/api/forum/post'
-import { listCommentByPost, delComment, restoreComment } from '@/api/forum/comment'
+import { listCommentByPost, delComment, restoreComment, getCommentLog } from '@/api/forum/comment'
 
 export default {
   name: 'ForumPost',
@@ -238,7 +254,10 @@ export default {
       },
       commentList: [],
       commentLoading: false,
-      commentDelFlag: '0'
+      commentDelFlag: '0',
+      commentLogDialogVisible: false,
+      commentLogLoading: false,
+      commentLogList: []
     }
   },
   computed: {
@@ -318,7 +337,7 @@ export default {
       this.$modal.confirm('确定要删除该评论吗？').then(() => {
         return delComment(row.commentId)
       }).then(() => {
-        this.loadComments()
+        this.refreshPostDetail()
         this.$modal.msgSuccess('删除成功')
       }).catch(() => {})
     },
@@ -326,9 +345,16 @@ export default {
       this.$modal.confirm('确定要恢复该评论吗？').then(() => {
         return restoreComment(row.commentId)
       }).then(() => {
-        this.loadComments()
+        this.refreshPostDetail()
         this.$modal.msgSuccess('恢复成功')
       }).catch(() => {})
+    },
+    refreshPostDetail() {
+      if (!this.detailData) return
+      getPost(this.detailData.postId).then(response => {
+        this.detailData = response.data
+        this.loadComments()
+      })
     },
     handleLock(row) {
       this.$modal.confirm('确定要锁定帖子"' + row.title + '"吗？锁定后将无法发表新评论。').then(() => {
@@ -404,6 +430,17 @@ export default {
         'unlock': '解锁'
       }
       return map[action] || action
+    },
+    handleViewCommentLog() {
+      if (!this.detailData) return
+      this.commentLogDialogVisible = true
+      this.commentLogLoading = true
+      this.commentLogList = []
+      getCommentLog(this.detailData.postId).then(response => {
+        this.commentLogList = response.data || []
+      }).finally(() => {
+        this.commentLogLoading = false
+      })
     }
   }
 }

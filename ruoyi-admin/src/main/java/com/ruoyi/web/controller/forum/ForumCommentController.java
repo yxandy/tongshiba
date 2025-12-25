@@ -9,8 +9,10 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.domain.ForumComment;
 import com.ruoyi.system.service.IForumCommentService;
+import com.ruoyi.system.service.IForumCommentLogService;
 
 /**
  * 评论管理Controller（管理后台）
@@ -23,6 +25,9 @@ public class ForumCommentController extends BaseController {
 
     @Autowired
     private IForumCommentService forumCommentService;
+
+    @Autowired
+    private IForumCommentLogService forumCommentLogService;
 
     /**
      * 查询评论列表
@@ -50,12 +55,34 @@ public class ForumCommentController extends BaseController {
     }
 
     /**
+     * 查询评论删除日志
+     */
+    @PreAuthorize("@ss.hasPermi('forum:post:list')")
+    @GetMapping("/log/{postId}")
+    public AjaxResult getLogList(@PathVariable Long postId) {
+        return success(forumCommentLogService.selectLogListByPostId(postId));
+    }
+
+    /**
      * 删除评论
      */
     @PreAuthorize("@ss.hasPermi('forum:post:remove')")
     @Log(title = "评论管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{commentIds}")
     public AjaxResult remove(@PathVariable Long[] commentIds) {
+        String operatorName = SecurityUtils.getUsername();
+        // 先查询评论信息用于记录日志
+        for (Long commentId : commentIds) {
+            ForumComment comment = forumCommentService.selectForumCommentById(commentId);
+            if (comment != null) {
+                forumCommentLogService.logDelete(
+                        comment.getPostId(),
+                        commentId,
+                        comment.getFloorNum(),
+                        comment.getContent(),
+                        operatorName);
+            }
+        }
         return toAjax(forumCommentService.deleteForumCommentByIds(commentIds));
     }
 

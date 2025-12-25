@@ -59,6 +59,15 @@
             <if test="isLocked != null and isLocked != ''">
                 AND p.is_locked = #{isLocked}
             </if>
+            <if test="userUnit != null and userUnit != ''">
+                AND p.user_unit like concat('%', #{userUnit}, '%')
+            </if>
+            <if test="userDept != null and userDept != ''">
+                AND p.user_dept like concat('%', #{userDept}, '%')
+            </if>
+            <if test="user != null and user.nickname != null and user.nickname != ''">
+                AND u.nickname like concat('%', #{user.nickname}, '%')
+            </if>
         </where>
         order by COALESCE(p.last_reply_time, p.create_time) desc
     </select>

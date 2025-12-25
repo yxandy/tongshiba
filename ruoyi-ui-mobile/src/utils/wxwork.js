@@ -183,8 +183,20 @@ export async function loginWithWxWork() {
     // 先解析 URL 参数（无论是否已有缓存用户）
     const urlParams = new URLSearchParams(window.location.search)
     const userid = urlParams.get('userid')
-    const parentDept = urlParams.get('parentDept')  // 所属单位
-    const dept = urlParams.get('dept')              // 所在部门
+
+    // URL 解码函数，处理上游传递的编码中文
+    const decodeParam = (str) => {
+        if (!str) return ''
+        try {
+            return decodeURIComponent(str)
+        } catch (e) {
+            console.warn('URL解码失败，保留原值:', str)
+            return str
+        }
+    }
+
+    const parentDept = decodeParam(urlParams.get('parentDept'))  // 所属单位
+    const dept = decodeParam(urlParams.get('dept'))              // 所在部门
 
     // 1. 检查 localStorage 是否已有用户信息
     const storedUser = localStorage.getItem('forumUser')

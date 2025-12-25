@@ -41,7 +41,10 @@
             @click="goToDetail(post.postId)"
           >
             <!-- 标题 -->
-            <div class="post-title">{{ post.title }}</div>
+            <div class="post-title">
+              <span v-if="isPinned(post)" class="pin-tag">【置顶】</span>
+              {{ post.title }}
+            </div>
             
             <!-- 内容摘要 (支持表情渲染) -->
             <div class="post-content" v-html="truncateContent(post.content)"></div>
@@ -229,6 +232,13 @@ function getImages(images) {
     return []
   }
 }
+
+// 判断是否置顶中
+function isPinned(post) {
+  if (post.isPinned !== '1') return false
+  if (!post.pinExpireTime) return true // 永久置顶
+  return new Date(post.pinExpireTime) > new Date()
+}
 </script>
 
 <style scoped>
@@ -325,6 +335,19 @@ function getImages(images) {
 @media (prefers-color-scheme: dark) {
   .post-title {
     color: #f5f5f5;
+  }
+}
+
+/* 置顶标签样式 */
+.pin-tag {
+  color: #ff6600;
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .pin-tag {
+    color: #ff9500;
   }
 }
 

@@ -82,4 +82,27 @@ public class ForumPostController extends BaseController {
     public AjaxResult restore(@PathVariable Long postId) {
         return toAjax(forumPostService.restorePost(postId));
     }
+
+    /**
+     * 置顶帖子
+     * 
+     * @param postId 帖子ID
+     * @param hours  置顶时长（小时），0表示永久
+     */
+    @PreAuthorize("@ss.hasPermi('forum:post:lock')")
+    @Log(title = "帖子管理", businessType = BusinessType.UPDATE)
+    @PutMapping("/pin/{postId}")
+    public AjaxResult pin(@PathVariable Long postId, @RequestParam(defaultValue = "0") Integer hours) {
+        return forumPostService.pinPost(postId, hours);
+    }
+
+    /**
+     * 取消置顶
+     */
+    @PreAuthorize("@ss.hasPermi('forum:post:lock')")
+    @Log(title = "帖子管理", businessType = BusinessType.UPDATE)
+    @PutMapping("/unpin/{postId}")
+    public AjaxResult unpin(@PathVariable Long postId) {
+        return toAjax(forumPostService.unpinPost(postId));
+    }
 }

@@ -48,3 +48,20 @@ export function restorePost(postId) {
         method: 'put'
     })
 }
+
+// 置顶帖子
+export function pinPost(postId, hours) {
+    return request({
+        url: '/forum/post/pin/' + postId,
+        method: 'put',
+        params: { hours }
+    })
+}
+
+// 取消置顶
+export function unpinPost(postId) {
+    return request({
+        url: '/forum/post/unpin/' + postId,
+        method: 'put'
+    })
+}

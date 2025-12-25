@@ -87,4 +87,43 @@ public class ForumPostServiceImpl implements IForumPostService {
         post.setDelFlag("0");
         return forumPostMapper.updateForumPost(post);
     }
+
+    @Override
+    public com.ruoyi.common.core.domain.AjaxResult pinPost(Long postId, Integer hours) {
+        // 检查帖子是否存在且未删除
+        ForumPost existingPost = forumPostMapper.selectForumPostById(postId);
+        if (existingPost == null) {
+            return com.ruoyi.common.core.domain.AjaxResult.error("帖子不存在");
+        }
+        if ("1".equals(existingPost.getDelFlag())) {
+            return com.ruoyi.common.core.domain.AjaxResult.error("已删除的帖子不能置顶");
+        }
+
+        ForumPost post = new ForumPost();
+        post.setPostId(postId);
+        post.setIsPinned("1");
+
+        // 计算过期时间
+        if (hours == null || hours == 0) {
+            // 永久置顶
+            post.setPinExpireTime(null);
+        } else {
+            java.util.Calendar calendar = java.util.Calendar.getInstance();
+            calendar.add(java.util.Calendar.HOUR_OF_DAY, hours);
+            post.setPinExpireTime(calendar.getTime());
+        }
+
+        int result = forumPostMapper.updateForumPost(post);
+        return result > 0 ? com.ruoyi.common.core.domain.AjaxResult.success()
+                : com.ruoyi.common.core.domain.AjaxResult.error("置顶失败");
+    }
+
+    @Override
+    public int unpinPost(Long postId) {
+        ForumPost post = new ForumPost();
+        post.setPostId(postId);
+        post.setIsPinned("0");
+        post.setPinExpireTime(null);
+        return forumPostMapper.updateForumPost(post);
+    }
 }

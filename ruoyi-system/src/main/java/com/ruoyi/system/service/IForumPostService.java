@@ -58,4 +58,17 @@ public interface IForumPostService {
      * 恢复已删除的帖子
      */
     public int restorePost(Long postId);
+
+    /**
+     * 置顶帖子
+     * 
+     * @param postId 帖子ID
+     * @param hours  置顶时长（小时），0表示永久
+     */
+    public com.ruoyi.common.core.domain.AjaxResult pinPost(Long postId, Integer hours);
+
+    /**
+     * 取消置顶
+     */
+    public int unpinPost(Long postId);
 }

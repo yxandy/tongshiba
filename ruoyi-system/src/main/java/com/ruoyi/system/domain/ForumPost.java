@@ -51,6 +51,12 @@ public class ForumPost extends BaseEntity {
     /** 最后回复时间 */
     private java.util.Date lastReplyTime;
 
+    /** 是否置顶（0否 1是） */
+    private String isPinned;
+
+    /** 置顶过期时间（NULL表示永久） */
+    private java.util.Date pinExpireTime;
+
     /** 发帖用户信息（非数据库字段） */
     private ForumUser user;
 
@@ -156,6 +162,22 @@ public class ForumPost extends BaseEntity {
 
     public void setLastReplyTime(java.util.Date lastReplyTime) {
         this.lastReplyTime = lastReplyTime;
+    }
+
+    public String getIsPinned() {
+        return isPinned;
+    }
+
+    public void setIsPinned(String isPinned) {
+        this.isPinned = isPinned;
+    }
+
+    public java.util.Date getPinExpireTime() {
+        return pinExpireTime;
+    }
+
+    public void setPinExpireTime(java.util.Date pinExpireTime) {
+        this.pinExpireTime = pinExpireTime;
     }
 
     @Override

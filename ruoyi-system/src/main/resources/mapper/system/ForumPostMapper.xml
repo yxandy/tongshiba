@@ -17,6 +17,8 @@
         <result property="createTime" column="create_time" />
         <result property="updateTime" column="update_time" />
         <result property="lastReplyTime" column="last_reply_time" />
+        <result property="isPinned" column="is_pinned" />
+        <result property="pinExpireTime" column="pin_expire_time" />
     </resultMap>
 
     <resultMap type="com.ruoyi.system.domain.ForumPost" id="ForumPostWithUserResult" extends="ForumPostResult">
@@ -35,7 +37,7 @@
     </sql>
 
     <sql id="selectForumPostWithUser">
-        select p.post_id, p.user_id, p.user_unit, p.user_dept, p.title, p.content, p.images, p.view_count, p.comment_count, p.is_locked, p.del_flag, p.create_time, p.update_time, p.last_reply_time,
+        select p.post_id, p.user_id, p.user_unit, p.user_dept, p.title, p.content, p.images, p.view_count, p.comment_count, p.is_locked, p.del_flag, p.create_time, p.update_time, p.last_reply_time, p.is_pinned, p.pin_expire_time,
                u.user_id as u_user_id, u.wx_userid as u_wx_userid, u.nickname as u_nickname, u.avatar as u_avatar, u.department as u_department
         from forum_post p
         left join forum_user u on p.user_id = u.user_id
@@ -79,8 +81,20 @@
             <if test="user != null and user.nickname != null and user.nickname != ''">
                 AND u.nickname like concat('%', #{user.nickname}, '%')
             </if>
+            <if test="isPinned != null and isPinned != ''">
+                <choose>
+                    <when test="isPinned.toString() == '1'.toString()">
+                        AND p.is_pinned = '1' AND (p.pin_expire_time IS NULL OR p.pin_expire_time &gt; NOW())
+                    </when>
+                    <otherwise>
+                        AND (p.is_pinned != '1' OR (p.is_pinned = '1' AND p.pin_expire_time IS NOT NULL AND p.pin_expire_time &lt;= NOW()))
+                    </otherwise>
+                </choose>
+            </if>
         </where>
-        order by COALESCE(p.last_reply_time, p.create_time) desc
+        order by 
+            CASE WHEN p.is_pinned = '1' AND (p.pin_expire_time IS NULL OR p.pin_expire_time > NOW()) THEN 0 ELSE 1 END,
+            COALESCE(p.last_reply_time, p.create_time) desc
     </select>
 
     <!-- 查询用户关注的帖子列表 -->
@@ -134,6 +148,8 @@
             <if test="images != null">images = #{images},</if>
             <if test="isLocked != null">is_locked = #{isLocked},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="isPinned != null">is_pinned = #{isPinned},</if>
+            <if test="isPinned != null">pin_expire_time = #{pinExpireTime},</if>
             update_time = sysdate()
         </trim>
         where post_id = #{postId}

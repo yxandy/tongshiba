@@ -27,6 +27,12 @@
           <el-option label="全部" value="2" />
         </el-select>
       </el-form-item>
+      <el-form-item label="置顶状态" prop="isPinned">
+        <el-select v-model="queryParams.isPinned" placeholder="置顶状态" clearable style="width: 100px">
+          <el-option label="置顶中" value="1" />
+          <el-option label="未置顶" value="0" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" @click="resetQuery">重置</el-button>
@@ -71,10 +77,20 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="置顶" width="130" align="center">
+        <template slot-scope="scope">
+          <template v-if="isPinned(scope.row)">
+            <el-tag type="warning" size="small">{{ getPinStatus(scope.row) }}</el-tag>
+          </template>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="发布时间" prop="createTime" width="160" />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template slot-scope="scope">
           <el-button size="mini" type="text" @click="handleView(scope.row)">查看</el-button>
+          <el-button size="mini" type="text" v-if="!isPinned(scope.row) && scope.row.delFlag !== '1'" @click="handlePin(scope.row)" v-hasPermi="['forum:post:lock']">置顶</el-button>
+          <el-button size="mini" type="text" v-if="isPinned(scope.row) && scope.row.delFlag !== '1'" style="color: #e6a23c" @click="handleUnpin(scope.row)" v-hasPermi="['forum:post:lock']">取消置顶</el-button>
           <el-button size="mini" type="text" v-if="scope.row.isLocked === '0' && scope.row.delFlag !== '1'" @click="handleLock(scope.row)" v-hasPermi="['forum:post:lock']">锁定</el-button>
           <el-button size="mini" type="text" v-if="scope.row.isLocked === '1' && scope.row.delFlag !== '1'" @click="handleUnlock(scope.row)" v-hasPermi="['forum:post:lock']">解锁</el-button>
           <el-button size="mini" type="text" v-if="scope.row.delFlag !== '1'" style="color: #f56c6c" @click="handleDelete(scope.row)" v-hasPermi="['forum:post:remove']">删除</el-button>
@@ -146,11 +162,25 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 置顶时长选择弹窗 -->
+    <el-dialog title="设置置顶时长" :visible.sync="pinDialogVisible" width="500px" append-to-body custom-class="pin-dialog">
+      <div class="pin-dialog-content">
+        <p class="pin-hint">请选择帖子置顶的时长，过期后自动取消置顶：</p>
+        <el-radio-group v-model="pinHours" size="medium" class="pin-options">
+          <el-radio v-for="opt in pinOptions" :key="opt.value" :label="opt.value" border style="margin-right: 10px; margin-bottom: 15px; width: 100px">{{ opt.label }}</el-radio>
+        </el-radio-group>
+      </div>
+      <div slot="footer">
+        <el-button @click="pinDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitPin">确定置顶</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listPost, getPost, delPost, lockPost, unlockPost, restorePost } from '@/api/forum/post'
+import { listPost, getPost, delPost, lockPost, unlockPost, restorePost, pinPost, unpinPost } from '@/api/forum/post'
 import { listCommentByPost, delComment, restoreComment } from '@/api/forum/comment'
 
 export default {
@@ -166,6 +196,18 @@ export default {
       detailOpen: false,
       detailTitle: '',
       detailData: null,
+      pinDialogVisible: false,
+      pinPostId: null,
+      pinHours: 0,
+      pinOptions: [
+        { label: '1小时', value: 1 },
+        { label: '6小时', value: 6 },
+        { label: '12小时', value: 12 },
+        { label: '1天', value: 24 },
+        { label: '3天', value: 72 },
+        { label: '7天', value: 168 },
+        { label: '永久', value: 0 }
+      ],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -174,7 +216,8 @@ export default {
         userUnit: undefined,
         userDept: undefined,
         isLocked: undefined,
-        delFlag: '0'
+        delFlag: '0',
+        isPinned: undefined
       },
       commentList: [],
       commentLoading: false,
@@ -195,6 +238,24 @@ export default {
     this.getList()
   },
   methods: {
+    isPinned(row) {
+      if (row.isPinned !== '1') return false
+      if (!row.pinExpireTime) return true // 永久置顶
+      return new Date(row.pinExpireTime) > new Date()
+    },
+    getPinStatus(row) {
+      if (!row.pinExpireTime) return '永久置顶'
+      const now = new Date()
+      const expire = new Date(row.pinExpireTime)
+      const diff = expire - now
+      if (diff <= 0) return '已过期'
+      const hours = Math.floor(diff / (1000 * 60 * 60))
+      const days = Math.floor(hours / 24)
+      if (days > 0) return `剩余${days}天${hours % 24}小时`
+      if (hours > 0) return `剩余${hours}小时`
+      const minutes = Math.floor(diff / (1000 * 60))
+      return `剩余${minutes}分钟`
+    },
     getList() {
       this.loading = true
       listPost(this.queryParams).then(response => {
@@ -284,6 +345,26 @@ export default {
         this.getList()
         this.$modal.msgSuccess('恢复成功')
       }).catch(() => {})
+    },
+    handlePin(row) {
+      this.pinPostId = row.postId
+      this.pinHours = 0
+      this.pinDialogVisible = true
+    },
+    submitPin() {
+      pinPost(this.pinPostId, this.pinHours).then(() => {
+        this.pinDialogVisible = false
+        this.getList()
+        this.$modal.msgSuccess('置顶成功')
+      }).catch(() => {})
+    },
+    handleUnpin(row) {
+      this.$modal.confirm('确定要取消置顶帖子"' + row.title + '"吗？').then(() => {
+        return unpinPost(row.postId)
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess('取消置顶成功')
+      }).catch(() => {})
     }
   }
 }
@@ -319,5 +400,18 @@ export default {
 .comment-header h4 {
   margin: 0;
   color: #606266;
+}
+.pin-dialog-content {
+  padding: 10px 20px;
+}
+.pin-hint {
+  color: #606266;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+.pin-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 </style>

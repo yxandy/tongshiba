@@ -90,4 +90,18 @@ public class ForumCommentServiceImpl implements IForumCommentService {
         // 执行逻辑删除并记录删除者
         return forumCommentMapper.logicalDeleteById(commentId, deletedBy);
     }
+
+    @Override
+    @Transactional
+    public int restoreComment(Long commentId) {
+        ForumComment comment = forumCommentMapper.selectForumCommentById(commentId);
+        if (comment != null && "1".equals(comment.getDelFlag())) {
+            // 恢复评论
+            int result = forumCommentMapper.restoreComment(commentId);
+            // 恢复帖子评论数
+            forumPostMapper.incrementCommentCount(comment.getPostId());
+            return result;
+        }
+        return 0;
+    }
 }

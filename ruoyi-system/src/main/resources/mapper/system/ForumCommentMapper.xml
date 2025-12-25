@@ -44,7 +44,18 @@
     <select id="selectForumCommentList" parameterType="com.ruoyi.system.domain.ForumComment" resultMap="ForumCommentWithUserResult">
         <include refid="selectForumCommentWithUser"/>
         <where>
-            c.del_flag = '0'
+            <!-- 支持按删除状态筛选：默认只查未删除，传 '1' 查已删除，传 '2' 查全部 -->
+            <choose>
+                <when test="delFlag != null and delFlag.toString() == '1'.toString()">
+                    c.del_flag = '1'
+                </when>
+                <when test="delFlag != null and delFlag.toString() == '2'.toString()">
+                    1=1
+                </when>
+                <otherwise>
+                    c.del_flag = '0'
+                </otherwise>
+            </choose>
             <if test="postId != null">
                 AND c.post_id = #{postId}
             </if>
@@ -115,6 +126,10 @@
 
     <update id="logicalDeleteById">
         update forum_comment set del_flag = '1', deleted_by = #{deletedBy} where comment_id = #{commentId}
+    </update>
+
+    <update id="restoreComment" parameterType="Long">
+        update forum_comment set del_flag = '0', deleted_by = null where comment_id = #{commentId}
     </update>
 
 </mapper>

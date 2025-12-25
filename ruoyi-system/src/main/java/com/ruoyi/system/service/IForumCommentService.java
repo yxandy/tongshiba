@@ -43,4 +43,9 @@ public interface IForumCommentService {
      * 逻辑删除评论并记录删除者
      */
     public int deleteForumCommentByIdWithDeletedBy(Long commentId, Long deletedBy);
+
+    /**
+     * 恢复已删除的评论
+     */
+    public int restoreComment(Long commentId);
 }

@@ -107,10 +107,42 @@
         </div>
 
         <el-divider />
-        <!-- 评论区域（预留） -->
+        <!-- 评论管理区域 -->
         <div class="comment-section">
-          <h4>评论列表（共 {{ detailData.commentCount }} 条）</h4>
-          <el-empty description="评论管理功能开发中..." />
+          <div class="comment-header">
+            <h4>评论列表（共 {{ detailData.commentCount }} 条）</h4>
+            <el-select v-model="commentDelFlag" placeholder="删除状态" size="mini" style="width: 100px" @change="loadComments">
+              <el-option label="正常" value="0" />
+              <el-option label="已删除" value="1" />
+              <el-option label="全部" value="2" />
+            </el-select>
+          </div>
+          <el-table v-loading="commentLoading" :data="commentList" size="mini" max-height="300">
+            <el-table-column label="楼层" prop="floorNum" width="60" align="center">
+              <template slot-scope="scope">{{ scope.row.floorNum }}#</template>
+            </el-table-column>
+            <el-table-column label="评论者" width="80">
+              <template slot-scope="scope">{{ scope.row.user ? scope.row.user.nickname : '-' }}</template>
+            </el-table-column>
+            <el-table-column label="评论时单位" prop="userUnit" width="120" :show-overflow-tooltip="true" />
+            <el-table-column label="评论时部门" prop="userDept" width="100" :show-overflow-tooltip="true" />
+            <el-table-column label="内容" prop="content" :show-overflow-tooltip="true" />
+            <el-table-column label="时间" prop="createTime" width="140" />
+            <el-table-column label="状态" width="70" align="center">
+              <template slot-scope="scope">
+                <el-tag :type="scope.row.delFlag === '1' ? 'info' : ''" size="mini">
+                  {{ scope.row.delFlag === '1' ? '已删除' : '正常' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="80" align="center">
+              <template slot-scope="scope">
+                <el-button v-if="scope.row.delFlag !== '1'" size="mini" type="text" style="color: #f56c6c" @click="handleDeleteComment(scope.row)" v-hasPermi="['forum:comment:remove']">删除</el-button>
+                <el-button v-else size="mini" type="text" style="color: #67c23a" @click="handleRestoreComment(scope.row)" v-hasPermi="['forum:comment:remove']">恢复</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-empty v-if="commentList.length === 0 && !commentLoading" description="暂无评论" />
         </div>
       </div>
     </el-dialog>
@@ -119,6 +151,7 @@
 
 <script>
 import { listPost, getPost, delPost, lockPost, unlockPost, restorePost } from '@/api/forum/post'
+import { listCommentByPost, delComment, restoreComment } from '@/api/forum/comment'
 
 export default {
   name: 'ForumPost',
@@ -142,7 +175,10 @@ export default {
         userDept: undefined,
         isLocked: undefined,
         delFlag: '0'
-      }
+      },
+      commentList: [],
+      commentLoading: false,
+      commentDelFlag: '0'
     }
   },
   computed: {
@@ -183,10 +219,38 @@ export default {
     },
     handleView(row) {
       this.detailTitle = '帖子详情'
+      this.commentDelFlag = '0'
       getPost(row.postId).then(response => {
         this.detailData = response.data
         this.detailOpen = true
+        this.loadComments()
       })
+    },
+    loadComments() {
+      if (!this.detailData) return
+      this.commentLoading = true
+      listCommentByPost(this.detailData.postId, this.commentDelFlag).then(response => {
+        this.commentList = response.data || []
+        this.commentLoading = false
+      }).catch(() => {
+        this.commentLoading = false
+      })
+    },
+    handleDeleteComment(row) {
+      this.$modal.confirm('确定要删除该评论吗？').then(() => {
+        return delComment(row.commentId)
+      }).then(() => {
+        this.loadComments()
+        this.$modal.msgSuccess('删除成功')
+      }).catch(() => {})
+    },
+    handleRestoreComment(row) {
+      this.$modal.confirm('确定要恢复该评论吗？').then(() => {
+        return restoreComment(row.commentId)
+      }).then(() => {
+        this.loadComments()
+        this.$modal.msgSuccess('恢复成功')
+      }).catch(() => {})
     },
     handleLock(row) {
       this.$modal.confirm('确定要锁定帖子"' + row.title + '"吗？锁定后将无法发表新评论。').then(() => {
@@ -246,8 +310,14 @@ export default {
 .comment-section {
   margin-top: 10px;
 }
-.comment-section h4 {
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 15px;
+}
+.comment-header h4 {
+  margin: 0;
   color: #606266;
 }
 </style>

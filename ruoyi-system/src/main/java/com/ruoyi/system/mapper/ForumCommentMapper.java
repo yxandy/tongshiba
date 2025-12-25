@@ -59,4 +59,9 @@ public interface ForumCommentMapper {
      * 逻辑删除评论并记录删除者
      */
     public int logicalDeleteById(@Param("commentId") Long commentId, @Param("deletedBy") Long deletedBy);
+
+    /**
+     * 恢复已删除的评论
+     */
+    public int restoreComment(Long commentId);
 }

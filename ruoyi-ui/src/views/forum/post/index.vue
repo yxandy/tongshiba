@@ -86,9 +86,10 @@
         </template>
       </el-table-column>
       <el-table-column label="发布时间" prop="createTime" width="160" />
-      <el-table-column label="操作" width="260" fixed="right">
+      <el-table-column label="操作" width="300" fixed="right">
         <template slot-scope="scope">
           <el-button size="mini" type="text" @click="handleView(scope.row)">查看</el-button>
+          <el-button size="mini" type="text" @click="handleViewLog(scope.row)">日志</el-button>
           <el-button size="mini" type="text" v-if="!isPinned(scope.row) && scope.row.delFlag !== '1'" @click="handlePin(scope.row)" v-hasPermi="['forum:post:lock']">置顶</el-button>
           <el-button size="mini" type="text" v-if="isPinned(scope.row) && scope.row.delFlag !== '1'" style="color: #e6a23c" @click="handleUnpin(scope.row)" v-hasPermi="['forum:post:lock']">取消置顶</el-button>
           <el-button size="mini" type="text" v-if="scope.row.isLocked === '0' && scope.row.delFlag !== '1'" @click="handleLock(scope.row)" v-hasPermi="['forum:post:lock']">锁定</el-button>
@@ -176,11 +177,24 @@
         <el-button type="primary" @click="submitPin">确定置顶</el-button>
       </div>
     </el-dialog>
+
+    <!-- 操作日志弹窗 -->
+    <el-dialog title="帖子操作日志" :visible.sync="logDialogVisible" width="600px" append-to-body>
+      <el-table v-loading="logLoading" :data="logList" size="small" max-height="400">
+        <el-table-column label="时间" prop="operateTime" width="160" />
+        <el-table-column label="操作" width="120">
+          <template slot-scope="scope">{{ getActionLabel(scope.row.action) }}</template>
+        </el-table-column>
+        <el-table-column label="操作人" prop="operatorName" width="100" />
+        <el-table-column label="详情" prop="description" :show-overflow-tooltip="true" />
+      </el-table>
+      <el-empty v-if="logList.length === 0 && !logLoading" description="暂无操作日志" />
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listPost, getPost, delPost, lockPost, unlockPost, restorePost, pinPost, unpinPost } from '@/api/forum/post'
+import { listPost, getPost, delPost, lockPost, unlockPost, restorePost, pinPost, unpinPost, getPostLog } from '@/api/forum/post'
 import { listCommentByPost, delComment, restoreComment } from '@/api/forum/comment'
 
 export default {
@@ -199,6 +213,9 @@ export default {
       pinDialogVisible: false,
       pinPostId: null,
       pinHours: 0,
+      logDialogVisible: false,
+      logLoading: false,
+      logList: [],
       pinOptions: [
         { label: '1小时', value: 1 },
         { label: '6小时', value: 6 },
@@ -365,6 +382,28 @@ export default {
         this.getList()
         this.$modal.msgSuccess('取消置顶成功')
       }).catch(() => {})
+    },
+    handleViewLog(row) {
+      this.logDialogVisible = true
+      this.logLoading = true
+      this.logList = []
+      getPostLog(row.postId).then(response => {
+        this.logList = response.data || []
+      }).finally(() => {
+        this.logLoading = false
+      })
+    },
+    getActionLabel(action) {
+      const map = {
+        'create': '发布',
+        'delete': '删除',
+        'restore': '恢复',
+        'pin': '置顶',
+        'unpin': '取消置顶',
+        'lock': '锁定',
+        'unlock': '解锁'
+      }
+      return map[action] || action
     }
   }
 }

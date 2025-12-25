@@ -65,3 +65,11 @@ export function unpinPost(postId) {
         method: 'put'
     })
 }
+
+// 获取帖子操作日志
+export function getPostLog(postId) {
+    return request({
+        url: '/forum/post/log/' + postId,
+        method: 'get'
+    })
+}

@@ -10,6 +10,7 @@ import com.ruoyi.system.domain.ForumPost;
 import com.ruoyi.system.domain.ForumUser;
 import com.ruoyi.system.service.IForumPostService;
 import com.ruoyi.system.service.IForumUserService;
+import com.ruoyi.system.service.IForumPostLogService;
 import com.ruoyi.web.dto.PostCreateRequest;
 import com.ruoyi.web.dto.DeletePostRequest;
 
@@ -27,6 +28,9 @@ public class MobilePostController extends BaseController {
 
     @Autowired
     private IForumUserService forumUserService;
+
+    @Autowired
+    private IForumPostLogService forumPostLogService;
 
     /**
      * 获取帖子列表
@@ -77,7 +81,12 @@ public class MobilePostController extends BaseController {
         post.setContent(request.getContent());
         post.setImages(request.getImages());
 
-        return toAjax(forumPostService.insertForumPost(post));
+        int result = forumPostService.insertForumPost(post);
+        if (result > 0) {
+            // 记录发帖日志
+            forumPostLogService.logAction(post.getPostId(), "create", null, user.getNickname(), "用户发布帖子");
+        }
+        return toAjax(result);
     }
 
     /**
@@ -103,6 +112,11 @@ public class MobilePostController extends BaseController {
             return error("您没有权限删除此帖子");
         }
 
-        return toAjax(forumPostService.deleteForumPostById(request.getPostId()));
+        int result = forumPostService.deleteForumPostById(request.getPostId());
+        if (result > 0) {
+            // 记录删帖日志
+            forumPostLogService.logAction(request.getPostId(), "delete", null, user.getNickname(), "帖子被删除");
+        }
+        return toAjax(result);
     }
 }

@@ -239,7 +239,7 @@ export default {
       detailData: null,
       pinDialogVisible: false,
       pinPostId: null,
-      pinHours: 0,
+      pinHours: 72,
       logDialogVisible: false,
       logLoading: false,
       logList: [],
@@ -426,7 +426,7 @@ export default {
     },
     handlePin(row) {
       this.pinPostId = row.postId
-      this.pinHours = 0
+      this.pinHours = 72
       this.pinDialogVisible = true
     },
     submitPin() {

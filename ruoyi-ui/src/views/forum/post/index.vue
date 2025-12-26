@@ -302,10 +302,20 @@ export default {
       if (qqMatch) {
         return `https://v.qq.com/txp/iframe/player.html?vid=${qqMatch[1]}`
       }
+      // 腾讯视频移动端 - 支持 m.v.qq.com/play/play.html?vid=xxx
+      const qqMobileMatch = url.match(/m\.v\.qq\.com\/.*[?&]vid=([^&]+)/i)
+      if (qqMobileMatch) {
+        return `https://v.qq.com/txp/iframe/player.html?vid=${qqMobileMatch[1]}`
+      }
       // 优酷
       const youkuMatch = url.match(/v\.youku\.com\/v_show\/id_([\w=]+)/i)
       if (youkuMatch) {
         return `https://player.youku.com/embed/${youkuMatch[1]}`
+      }
+      // 优酷移动端 - 支持 m.youku.com/mid_video/id_xxx.html
+      const youkuMobileMatch = url.match(/m\.youku\.com\/.*\/id_([\w=]+)/i)
+      if (youkuMobileMatch) {
+        return `https://player.youku.com/embed/${youkuMobileMatch[1]}`
       }
       return null
     },

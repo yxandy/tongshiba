@@ -147,7 +147,7 @@
       @opened="onVideoDialogOpened"
     >
       <div class="video-dialog-content">
-        <p class="video-tips">支持：优酷、爱奇艺、腾讯视频、B站</p>
+        <p class="video-tips">支持：优酷、腾讯视频、B站</p>
         <van-field
           ref="videoInputRef"
           v-model="videoInputUrl"
@@ -189,9 +189,8 @@ const videoInputRef = ref(null)
 
 // 支持的视频平台正则
 const VIDEO_PLATFORMS = [
-  { name: '优酷', pattern: /youku\.com|v\.youku\.com/i },
-  { name: '爱奇艺', pattern: /iqiyi\.com|iq\.com/i },
-  { name: '腾讯视频', pattern: /v\.qq\.com|qq\.com\/x\/cover/i },
+  { name: '优酷', pattern: /youku\.com|v\.youku\.com|m\.youku\.com/i },
+  { name: '腾讯视频', pattern: /v\.qq\.com|m\.v\.qq\.com|qq\.com\/x\/cover/i },
   { name: 'B站', pattern: /bilibili\.com|b23\.tv/i }
 ]
 
@@ -341,7 +340,7 @@ function validateVideoUrl(url) {
   // 检查是否匹配支持的平台
   const matched = VIDEO_PLATFORMS.some(p => p.pattern.test(url))
   if (!matched) {
-    return '仅支持优酷、爱奇艺、腾讯视频、B站的视频链接'
+    return '仅支持优酷、腾讯视频、B站的视频链接'
   }
   return ''
 }

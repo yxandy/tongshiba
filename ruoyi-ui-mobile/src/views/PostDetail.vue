@@ -531,9 +531,8 @@ async function confirmDelete() {
 
 // 视频平台识别
 const VIDEO_PLATFORMS = [
-  { name: '优酷', pattern: /youku\.com|v\.youku\.com/i },
-  { name: '爱奇艺', pattern: /iqiyi\.com|iq\.com/i },
-  { name: '腾讯视频', pattern: /v\.qq\.com|qq\.com\/x\/cover/i },
+  { name: '优酷', pattern: /youku\.com|v\.youku\.com|m\.youku\.com/i },
+  { name: '腾讯视频', pattern: /v\.qq\.com|m\.v\.qq\.com|qq\.com\/x\/cover/i },
   { name: 'B站', pattern: /bilibili\.com|b23\.tv/i }
 ]
 
@@ -575,16 +574,22 @@ function getEmbedUrl(url) {
     return `https://v.qq.com/txp/iframe/player.html?vid=${qqMatch[1]}`
   }
   
+  // 腾讯视频移动端 - 支持 m.v.qq.com/play/play.html?vid=xxx
+  const qqMobileMatch = url.match(/m\.v\.qq\.com\/.*[?&]vid=([^&]+)/i)
+  if (qqMobileMatch) {
+    return `https://v.qq.com/txp/iframe/player.html?vid=${qqMobileMatch[1]}`
+  }
+  
   // 优酷 - 支持 v.youku.com/v_show/id_xxx.html
   const youkuMatch = url.match(/v\.youku\.com\/v_show\/id_([\w=]+)/i)
   if (youkuMatch) {
     return `https://player.youku.com/embed/${youkuMatch[1]}`
   }
   
-  // 爱奇艺 - 支持 iqiyi.com/xxx.html
-  const iqiyiMatch = url.match(/iqiyi\.com\/[\w_]+\/([\w]+)\.html/i)
-  if (iqiyiMatch) {
-    return `https://open.iqiyi.com/developer/player_js/co498rlg0qv0c9_h.html?vid=${iqiyiMatch[1]}`
+  // 优酷移动端 - 支持 m.youku.com/mid_video/id_xxx.html
+  const youkuMobileMatch = url.match(/m\.youku\.com\/.*\/id_([\w=]+)/i)
+  if (youkuMobileMatch) {
+    return `https://player.youku.com/embed/${youkuMobileMatch[1]}`
   }
   
   // 短链接和其他格式无法嵌入，返回null

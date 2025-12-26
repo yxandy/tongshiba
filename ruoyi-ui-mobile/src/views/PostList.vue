@@ -53,6 +53,11 @@
             <div v-if="(!post.content || !post.content.trim()) && post.images" class="post-image-icon">
               <van-icon name="photo-o" size="20" />
             </div>
+            
+            <!-- 如果没有文字内容但有视频，显示视频图标 -->
+            <div v-if="(!post.content || !post.content.trim()) && !post.images && post.videoUrl" class="post-video-icon">
+              <van-icon name="video-o" size="20" />
+            </div>
 
             <!-- 底部信息 -->
             <div class="post-footer">
@@ -372,6 +377,17 @@ function isPinned(post) {
 
 @media (prefers-color-scheme: dark) {
   .post-image-icon {
+    color: #666;
+  }
+}
+
+.post-video-icon {
+  color: #999;
+  margin-bottom: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .post-video-icon {
     color: #666;
   }
 }

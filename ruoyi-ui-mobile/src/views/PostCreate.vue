@@ -362,15 +362,28 @@ function truncateUrl(url) {
   return url.length > 30 ? url.substring(0, 30) + '...' : url
 }
 
+// 从分享文本中提取URL (如B站分享 "【标题-哔哩哔哩】 https://b23.tv/xxx")
+function extractVideoUrl(text) {
+  if (!text) return ''
+  // 使用正则提取 http/https 开头的URL
+  const urlMatch = text.match(/https?:\/\/[^\s]+/i)
+  if (urlMatch) {
+    return urlMatch[0]
+  }
+  return text.trim()
+}
+
 // 视频弹窗关闭前的回调
 function onVideoDialogClose(action) {
   if (action === 'confirm') {
-    const error = validateVideoUrl(videoInputUrl.value)
+    // 先提取URL（处理B站等分享文本）
+    const extractedUrl = extractVideoUrl(videoInputUrl.value)
+    const error = validateVideoUrl(extractedUrl)
     if (error) {
       videoError.value = error
       return false // 阻止关闭
     }
-    videoUrl.value = videoInputUrl.value.trim()
+    videoUrl.value = extractedUrl
     videoError.value = ''
     videoInputUrl.value = ''
     return true

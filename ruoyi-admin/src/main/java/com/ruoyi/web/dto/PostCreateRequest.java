@@ -10,6 +10,7 @@ public class PostCreateRequest {
     private String images;
     private String userUnit;
     private String userDept;
+    private String videoUrl;
 
     public String getWxUserid() {
         return wxUserid;
@@ -57,5 +58,13 @@ public class PostCreateRequest {
 
     public void setUserDept(String userDept) {
         this.userDept = userDept;
+    }
+
+    public String getVideoUrl() {
+        return videoUrl;
+    }
+
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
     }
 }

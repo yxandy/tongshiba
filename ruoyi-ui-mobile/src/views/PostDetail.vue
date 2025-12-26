@@ -45,6 +45,29 @@
           />
         </div>
 
+        <!-- 视频展示 -->
+        <div v-if="post.videoUrl" class="post-video">
+          <!-- 可嵌入的视频 -->
+          <div v-if="getEmbedUrl(post.videoUrl)" class="video-embed-wrapper">
+            <iframe 
+              :src="getEmbedUrl(post.videoUrl)" 
+              frameborder="0" 
+              allowfullscreen
+              class="video-iframe"
+            ></iframe>
+          </div>
+          <!-- 无法嵌入时显示跳转卡片 -->
+          <div v-else class="video-card" @click="openVideo(post.videoUrl)">
+            <div class="video-icon">
+              <van-icon name="play-circle-o" size="40" color="#fff" />
+            </div>
+            <div class="video-info">
+              <span class="video-platform">{{ getVideoPlatform(post.videoUrl) }}</span>
+              <span class="video-text">点击播放视频</span>
+            </div>
+          </div>
+        </div>
+
         <!-- 底部元信息 (作者 · 时间 · 删除) -->
         <div class="post-meta-footer">
           <span class="meta-author" @click="handleOpenUserProfile(post.user?.wxUserid)" style="cursor: pointer;">{{ post.user?.nickname || '匿名用户' }}</span>
@@ -506,6 +529,68 @@ async function confirmDelete() {
   }
 }
 
+// 视频平台识别
+const VIDEO_PLATFORMS = [
+  { name: '优酷', pattern: /youku\.com|v\.youku\.com/i },
+  { name: '爱奇艺', pattern: /iqiyi\.com|iq\.com/i },
+  { name: '腾讯视频', pattern: /v\.qq\.com|qq\.com\/x\/cover/i },
+  { name: 'B站', pattern: /bilibili\.com|b23\.tv/i }
+]
+
+function getVideoPlatform(url) {
+  if (!url) return '视频'
+  for (const p of VIDEO_PLATFORMS) {
+    if (p.pattern.test(url)) {
+      return p.name
+    }
+  }
+  return '视频'
+}
+
+// 打开视频链接
+function openVideo(url) {
+  if (!url) return
+  window.open(url, '_blank')
+}
+
+// 获取嵌入播放URL (返回null表示无法嵌入)
+function getEmbedUrl(url) {
+  if (!url) return null
+  
+  // B站 - 支持 bilibili.com/video/BVxxx 格式
+  const bvMatch = url.match(/bilibili\.com\/video\/(BV[\w]+)/i)
+  if (bvMatch) {
+    return `//player.bilibili.com/player.html?bvid=${bvMatch[1]}&high_quality=1&danmaku=0`
+  }
+  
+  // B站 - 支持 bilibili.com/video/avxxx 格式
+  const avMatch = url.match(/bilibili\.com\/video\/av(\d+)/i)
+  if (avMatch) {
+    return `//player.bilibili.com/player.html?aid=${avMatch[1]}&high_quality=1&danmaku=0`
+  }
+  
+  // 腾讯视频 - 支持 v.qq.com/x/cover/xxx/xxx.html 或 v.qq.com/x/page/xxx.html
+  const qqMatch = url.match(/v\.qq\.com\/x\/(?:cover\/[\w]+\/|page\/)([\w]+)\.html/i)
+  if (qqMatch) {
+    return `https://v.qq.com/txp/iframe/player.html?vid=${qqMatch[1]}`
+  }
+  
+  // 优酷 - 支持 v.youku.com/v_show/id_xxx.html
+  const youkuMatch = url.match(/v\.youku\.com\/v_show\/id_([\w=]+)/i)
+  if (youkuMatch) {
+    return `https://player.youku.com/embed/${youkuMatch[1]}`
+  }
+  
+  // 爱奇艺 - 支持 iqiyi.com/xxx.html
+  const iqiyiMatch = url.match(/iqiyi\.com\/[\w_]+\/([\w]+)\.html/i)
+  if (iqiyiMatch) {
+    return `https://open.iqiyi.com/developer/player_js/co498rlg0qv0c9_h.html?vid=${iqiyiMatch[1]}`
+  }
+  
+  // 短链接和其他格式无法嵌入，返回null
+  return null
+}
+
 // 加载评论
 async function loadComments() {
   if (commentFinished.value) return
@@ -878,8 +963,67 @@ function formatTime(timeStr) {
 }
 
 .post-image {
-  margin-bottom: 8px;
-  border-radius: 4px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+/* Video Card */
+.post-video {
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+/* 响应式视频嵌入 */
+.video-embed-wrapper {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 比例 */
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.video-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.video-card {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.video-icon {
+  margin-right: 16px;
+}
+
+.video-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.video-platform {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.video-text {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.video-card:active {
+  opacity: 0.9;
 }
 
 /* Meta Footer */

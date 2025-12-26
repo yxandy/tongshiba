@@ -11,6 +11,7 @@ import com.ruoyi.system.domain.ForumUser;
 import com.ruoyi.system.service.IForumPostService;
 import com.ruoyi.system.service.IForumUserService;
 import com.ruoyi.system.service.IForumPostLogService;
+import com.ruoyi.system.service.IVideoUrlService;
 import com.ruoyi.web.dto.PostCreateRequest;
 import com.ruoyi.web.dto.DeletePostRequest;
 
@@ -31,6 +32,9 @@ public class MobilePostController extends BaseController {
 
     @Autowired
     private IForumPostLogService forumPostLogService;
+
+    @Autowired
+    private IVideoUrlService videoUrlService;
 
     /**
      * 获取帖子列表
@@ -80,6 +84,12 @@ public class MobilePostController extends BaseController {
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
         post.setImages(request.getImages());
+        // 解析视频短链接
+        String videoUrl = request.getVideoUrl();
+        if (videoUrl != null && !videoUrl.isEmpty()) {
+            videoUrl = videoUrlService.resolveShortUrl(videoUrl);
+        }
+        post.setVideoUrl(videoUrl);
 
         int result = forumPostService.insertForumPost(post);
         if (result > 0) {

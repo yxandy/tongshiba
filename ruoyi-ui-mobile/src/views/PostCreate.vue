@@ -34,6 +34,16 @@
           <van-icon name="clear" class="remove-btn" @click="removeImage(idx)" />
         </div>
       </div>
+
+      <!-- 已添加视频预览 -->
+      <div v-if="videoUrl" class="video-preview">
+        <div class="video-info">
+          <van-icon name="video-o" size="20" />
+          <span class="video-platform">{{ getVideoPlatform(videoUrl) }}</span>
+          <span class="video-url">{{ truncateUrl(videoUrl) }}</span>
+          <van-icon name="cross" class="remove-video" @click="removeVideo" />
+        </div>
+      </div>
     </div>
 
     <!-- 底部功能区固定容器 -->
@@ -50,6 +60,11 @@
           <!-- 图片 -->
           <div class="tool-icon" @click="selectImage">
             <van-icon name="photo-o" />
+          </div>
+          
+          <!-- 视频 -->
+          <div class="tool-icon" @click="showVideoDialog = true">
+            <van-icon name="video-o" />
           </div>
           
           <!-- 表情 -->
@@ -121,6 +136,25 @@
       style="display: none" 
       @change="handleImageSelect"
     />
+
+    <!-- 视频链接输入弹窗 -->
+    <van-dialog
+      v-model:show="showVideoDialog"
+      title="插入视频链接"
+      show-cancel-button
+      :before-close="onVideoDialogClose"
+    >
+      <div class="video-dialog-content">
+        <p class="video-tips">支持：优酷、爱奇艺、腾讯视频、B站</p>
+        <van-field
+          v-model="videoInputUrl"
+          placeholder="粘贴视频链接"
+          clearable
+          autofocus
+        />
+        <p v-if="videoError" class="video-error">{{ videoError }}</p>
+      </div>
+    </van-dialog>
   </div>
 </template>
 
@@ -143,6 +177,20 @@ const showEmojiPicker = ref(false)
 const fileInput = ref(null)
 const titleInputRef = ref(null)
 const bottomOffset = ref(0)
+
+// 视频相关
+const videoUrl = ref('')
+const showVideoDialog = ref(false)
+const videoInputUrl = ref('')
+const videoError = ref('')
+
+// 支持的视频平台正则
+const VIDEO_PLATFORMS = [
+  { name: '优酷', pattern: /youku\.com|v\.youku\.com/i },
+  { name: '爱奇艺', pattern: /iqiyi\.com|iq\.com/i },
+  { name: '腾讯视频', pattern: /v\.qq\.com|qq\.com\/x\/cover/i },
+  { name: 'B站', pattern: /bilibili\.com|b23\.tv/i }
+]
 
 // iOS 输入法辅助栏高度（包含上下箭头和“完成”按钮）
 const IOS_ACCESSORY_BAR_HEIGHT = 44
@@ -247,17 +295,18 @@ async function initUser() {
   }
 }
 
-// 是否可以提交：有标题 + (有内容 或 有图片)
+// 是否可以提交：有标题 + (有内容 或 有图片 或 有视频)
 const canSubmit = computed(() => {
   const hasTitle = title.value.trim().length > 0
   const hasContent = content.value.trim().length > 0
   const hasImages = imageList.value.length > 0
-  return hasTitle && (hasContent || hasImages)
+  const hasVideo = videoUrl.value.length > 0
+  return hasTitle && (hasContent || hasImages || hasVideo)
 })
 
 // 返回
 function goBack() {
-  if (title.value || content.value || imageList.value.length > 0) {
+  if (title.value || content.value || imageList.value.length > 0 || videoUrl.value) {
     showDialog({
       title: '提示',
       message: '确定要放弃编辑吗？',
@@ -273,6 +322,66 @@ function goBack() {
 // 选择图片
 function selectImage() {
   fileInput.value?.click()
+}
+
+// 视频链接验证
+function validateVideoUrl(url) {
+  if (!url || !url.trim()) {
+    return '请输入视频链接'
+  }
+  // 检查是否是URL格式
+  try {
+    new URL(url)
+  } catch {
+    return '请输入有效的链接地址'
+  }
+  // 检查是否匹配支持的平台
+  const matched = VIDEO_PLATFORMS.some(p => p.pattern.test(url))
+  if (!matched) {
+    return '仅支持优酷、爱奇艺、腾讯视频、B站的视频链接'
+  }
+  return ''
+}
+
+// 获取视频平台名称
+function getVideoPlatform(url) {
+  for (const p of VIDEO_PLATFORMS) {
+    if (p.pattern.test(url)) {
+      return p.name
+    }
+  }
+  return '视频'
+}
+
+// 截断URL显示
+function truncateUrl(url) {
+  if (!url) return ''
+  return url.length > 30 ? url.substring(0, 30) + '...' : url
+}
+
+// 视频弹窗关闭前的回调
+function onVideoDialogClose(action) {
+  if (action === 'confirm') {
+    const error = validateVideoUrl(videoInputUrl.value)
+    if (error) {
+      videoError.value = error
+      return false // 阻止关闭
+    }
+    videoUrl.value = videoInputUrl.value.trim()
+    videoError.value = ''
+    videoInputUrl.value = ''
+    return true
+  } else {
+    // 取消
+    videoError.value = ''
+    videoInputUrl.value = ''
+    return true
+  }
+}
+
+// 移除视频
+function removeVideo() {
+  videoUrl.value = ''
 }
 
 // 压缩图片
@@ -405,6 +514,7 @@ async function submitPost() {
       title: title.value.trim(),
       content: content.value.trim(),
       images: imageList.value.length > 0 ? JSON.stringify(imageList.value) : '',
+      videoUrl: videoUrl.value || '',
       userUnit: user.unit || '',
       userDept: user.department || ''
     })
@@ -752,5 +862,73 @@ async function submitPost() {
     background: #f5f5f5;
     color: #333;
   }
+}
+
+/* 视频预览 */
+.video-preview {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.video-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 14px;
+}
+
+.video-platform {
+  background: #1989fa;
+  color: #fff;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.video-url {
+  flex: 1;
+  color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-video {
+  color: #ee0a24;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+  .video-preview {
+    background: #2c2c2c;
+  }
+  .video-info {
+    color: #aaa;
+  }
+  .video-url {
+    color: #666;
+  }
+}
+
+/* 视频弹窗 */
+.video-dialog-content {
+  padding: 16px;
+}
+
+.video-tips {
+  font-size: 13px;
+  color: #999;
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+.video-error {
+  font-size: 12px;
+  color: #ee0a24;
+  margin: 8px 0 0 0;
 }
 </style>

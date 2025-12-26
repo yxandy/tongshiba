@@ -33,6 +33,9 @@ public class ForumPost extends BaseEntity {
     /** 图片URL列表(JSON数组) */
     private String images;
 
+    /** 视频链接 */
+    private String videoUrl;
+
     /** 浏览次数 */
     @Excel(name = "浏览次数")
     private Integer viewCount;
@@ -114,6 +117,14 @@ public class ForumPost extends BaseEntity {
 
     public void setImages(String images) {
         this.images = images;
+    }
+
+    public String getVideoUrl() {
+        return videoUrl;
+    }
+
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
     }
 
     public Integer getViewCount() {

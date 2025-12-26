@@ -10,6 +10,7 @@
         <result property="title" column="title" />
         <result property="content" column="content" />
         <result property="images" column="images" />
+        <result property="videoUrl" column="video_url" />
         <result property="viewCount" column="view_count" />
         <result property="commentCount" column="comment_count" />
         <result property="isLocked" column="is_locked" />
@@ -37,7 +38,7 @@
     </sql>
 
     <sql id="selectForumPostWithUser">
-        select p.post_id, p.user_id, p.user_unit, p.user_dept, p.title, p.content, p.images, p.view_count, p.comment_count, p.is_locked, p.del_flag, p.create_time, p.update_time, p.last_reply_time, p.is_pinned, p.pin_expire_time,
+        select p.post_id, p.user_id, p.user_unit, p.user_dept, p.title, p.content, p.images, p.video_url, p.view_count, p.comment_count, p.is_locked, p.del_flag, p.create_time, p.update_time, p.last_reply_time, p.is_pinned, p.pin_expire_time,
                u.user_id as u_user_id, u.wx_userid as u_wx_userid, u.nickname as u_nickname, u.avatar as u_avatar, u.department as u_department
         from forum_post p
         left join forum_user u on p.user_id = u.user_id
@@ -119,6 +120,7 @@
             <if test="title != null and title != ''">title,</if>
             <if test="content != null">content,</if>
             <if test="images != null">images,</if>
+            <if test="videoUrl != null and videoUrl != ''">video_url,</if>
             view_count,
             comment_count,
             is_locked,
@@ -132,6 +134,7 @@
             <if test="title != null and title != ''">#{title},</if>
             <if test="content != null">#{content},</if>
             <if test="images != null">#{images},</if>
+            <if test="videoUrl != null and videoUrl != ''">#{videoUrl},</if>
             0,
             0,
             '0',

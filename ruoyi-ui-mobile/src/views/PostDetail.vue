@@ -24,8 +24,16 @@
         </template>
       </van-nav-bar>
 
+      <!-- 加载中骨架屏 -->
+      <div v-if="postLoading" class="post-skeleton">
+        <van-skeleton title title-width="60%" :row="4" />
+        <div class="skeleton-meta">
+          <van-skeleton-paragraph row-width="40%" />
+        </div>
+      </div>
+
       <!-- 帖子内容 -->
-      <div v-if="post" class="post-content-wrap">
+      <div v-else-if="post" class="post-content-wrap">
         <!-- 标题 -->
         <h1 class="post-title">{{ post.title }}</h1>
         
@@ -248,6 +256,7 @@ const isWxWork = ref(true)
 const isDev = ref(import.meta.env.DEV)
 const accessDeniedMessage = ref(getAccessDeniedMessage())
 const post = ref(null)
+const postLoading = ref(true)
 const comments = ref([])
 const commentLoading = ref(false)
 const commentFinished = ref(false)
@@ -464,6 +473,8 @@ async function loadPost() {
     loadFollowStatus()
   } catch (e) {
     showToast('加载失败')
+  } finally {
+    postLoading.value = false
   }
 }
 
@@ -930,6 +941,24 @@ function formatTime(timeStr) {
   justify-content: center;
   height: 100vh;
   color: var(--text-secondary);
+}
+
+/* 骨架屏样式 */
+.post-skeleton {
+  padding: 16px;
+  padding-top: 20px;
+  background: #fff;
+  min-height: 200px;
+}
+
+.skeleton-meta {
+  margin-top: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .post-skeleton {
+    background: #2c2c2c;
+  }
 }
 
 .post-content-wrap {

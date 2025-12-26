@@ -43,8 +43,18 @@
         </div>
       </div>
 
+      <!-- 骨架屏（首次加载时显示） -->
+      <div v-if="isFirstLoad" class="skeleton-container">
+        <div v-for="i in 4" :key="i" class="skeleton-card">
+          <van-skeleton title :row="2" />
+          <div class="skeleton-footer">
+            <van-skeleton-paragraph row-width="30%" />
+          </div>
+        </div>
+      </div>
+
       <!-- 下拉刷新 + 帖子列表 -->
-      <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+      <van-pull-refresh v-else v-model="refreshing" @refresh="onRefresh">
         <van-list
           v-model:loading="loading"
           :finished="finished"
@@ -115,6 +125,7 @@ const isDev = ref(import.meta.env.DEV)
 const accessDeniedMessage = ref(getAccessDeniedMessage())
 const postList = ref([])
 const loading = ref(false)
+const isFirstLoad = ref(true)
 const finished = ref(false)
 const refreshing = ref(false)
 const pageNum = ref(1)
@@ -136,6 +147,7 @@ const selectedCategoryId = ref(null)
 watch(selectedCategoryId, () => {
   pageNum.value = 1
   finished.value = false
+  loading.value = false
   postList.value = []
   loadMore()
 })
@@ -166,7 +178,8 @@ onMounted(async () => {
   // 开发环境或企业微信环境，同步用户信息
   if (isDev.value || isWxWork.value) {
     await initUser()
-    // van-list 会自动触发 @load 事件加载数据，无需手动调用
+    // 手动加载数据（因为骨架屏显示时 van-list 未渲染，无法自动触发 @load）
+    loadMore()
   }
 })
 
@@ -245,6 +258,7 @@ async function loadMore() {
   } finally {
     loading.value = false
     refreshing.value = false
+    isFirstLoad.value = false
   }
 }
 
@@ -291,6 +305,28 @@ function isPinned(post) {
 </script>
 
 <style scoped>
+/* 骨架屏样式 */
+.skeleton-container {
+  padding: 0 16px;
+}
+
+.skeleton-card {
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.skeleton-footer {
+  margin-top: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .skeleton-card {
+    background: #1a1a1a;
+  }
+}
+
 .debug-panel {
   position: fixed;
   top: 50px;

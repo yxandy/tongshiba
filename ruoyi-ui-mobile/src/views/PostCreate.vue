@@ -143,14 +143,16 @@
       title="插入视频链接"
       show-cancel-button
       :before-close="onVideoDialogClose"
+      :lazy-render="false"
+      @opened="onVideoDialogOpened"
     >
       <div class="video-dialog-content">
         <p class="video-tips">支持：优酷、爱奇艺、腾讯视频、B站</p>
         <van-field
+          ref="videoInputRef"
           v-model="videoInputUrl"
           placeholder="粘贴视频链接"
           clearable
-          autofocus
         />
         <p v-if="videoError" class="video-error">{{ videoError }}</p>
       </div>
@@ -183,6 +185,7 @@ const videoUrl = ref('')
 const showVideoDialog = ref(false)
 const videoInputUrl = ref('')
 const videoError = ref('')
+const videoInputRef = ref(null)
 
 // 支持的视频平台正则
 const VIDEO_PLATFORMS = [
@@ -377,6 +380,16 @@ function onVideoDialogClose(action) {
     videoInputUrl.value = ''
     return true
   }
+}
+
+// 视频弹窗完全打开后 focus 输入框
+function onVideoDialogOpened() {
+  // 延迟 focus，确保动画完成且键盘状态稳定
+  setTimeout(() => {
+    if (videoInputRef.value) {
+      videoInputRef.value.focus()
+    }
+  }, 100)
 }
 
 // 移除视频

@@ -123,6 +123,17 @@
           <el-image v-for="(img, idx) in detailImages" :key="idx" :src="img" :preview-src-list="detailImages" fit="cover" style="width: 150px; height: 150px; margin: 5px;" />
         </div>
 
+        <!-- 视频展示 -->
+        <div v-if="detailData.videoUrl" class="post-video">
+          <div v-if="getEmbedUrl(detailData.videoUrl)" class="video-embed-wrapper">
+            <iframe :src="getEmbedUrl(detailData.videoUrl)" frameborder="0" allowfullscreen class="video-iframe"></iframe>
+          </div>
+          <div v-else class="video-link">
+            <i class="el-icon-video-camera"></i>
+            <a :href="detailData.videoUrl" target="_blank">{{ detailData.videoUrl }}</a>
+          </div>
+        </div>
+
         <el-divider />
         <!-- 评论管理区域 -->
         <div class="comment-section">
@@ -274,6 +285,30 @@ export default {
     this.getList()
   },
   methods: {
+    getEmbedUrl(url) {
+      if (!url) return null
+      // B站 - 支持 bilibili.com/video/BVxxx 格式
+      const bvMatch = url.match(/bilibili\.com\/video\/(BV[\w]+)/i)
+      if (bvMatch) {
+        return `//player.bilibili.com/player.html?bvid=${bvMatch[1]}&high_quality=1&danmaku=0`
+      }
+      // B站 - 支持 bilibili.com/video/avxxx 格式
+      const avMatch = url.match(/bilibili\.com\/video\/av(\d+)/i)
+      if (avMatch) {
+        return `//player.bilibili.com/player.html?aid=${avMatch[1]}&high_quality=1&danmaku=0`
+      }
+      // 腾讯视频
+      const qqMatch = url.match(/v\.qq\.com\/x\/(?:cover\/[\w]+\/|page\/)([\w]+)\.html/i)
+      if (qqMatch) {
+        return `https://v.qq.com/txp/iframe/player.html?vid=${qqMatch[1]}`
+      }
+      // 优酷
+      const youkuMatch = url.match(/v\.youku\.com\/v_show\/id_([\w=]+)/i)
+      if (youkuMatch) {
+        return `https://player.youku.com/embed/${youkuMatch[1]}`
+      }
+      return null
+    },
     isPinned(row) {
       if (row.isPinned !== '1') return false
       if (!row.pinExpireTime) return true // 永久置顶
@@ -489,5 +524,41 @@ export default {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-start;
+}
+.post-video {
+  margin-top: 15px;
+}
+.video-embed-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  padding-bottom: 56.25%;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.video-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+.video-link {
+  padding: 10px 15px;
+  background: #f4f4f5;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.video-link i {
+  font-size: 18px;
+  color: #909399;
+}
+.video-link a {
+  color: #409eff;
+  word-break: break-all;
 }
 </style>

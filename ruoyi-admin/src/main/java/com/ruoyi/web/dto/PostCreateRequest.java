@@ -11,6 +11,7 @@ public class PostCreateRequest {
     private String userUnit;
     private String userDept;
     private String videoUrl;
+    private Long categoryId;
 
     public String getWxUserid() {
         return wxUserid;
@@ -66,5 +67,13 @@ public class PostCreateRequest {
 
     public void setVideoUrl(String videoUrl) {
         this.videoUrl = videoUrl;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
     }
 }

@@ -23,6 +23,12 @@ public class ForumPost extends BaseEntity {
     /** 发帖时用户部门 */
     private String userDept;
 
+    /** 分类ID */
+    private Long categoryId;
+
+    /** 分类名称（关联查询） */
+    private String categoryName;
+
     /** 帖子标题 */
     @Excel(name = "帖子标题")
     private String title;
@@ -117,6 +123,22 @@ public class ForumPost extends BaseEntity {
 
     public void setImages(String images) {
         this.images = images;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
+    public String getCategoryName() {
+        return categoryName;
+    }
+
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
     }
 
     public String getVideoUrl() {

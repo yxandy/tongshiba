@@ -33,6 +33,11 @@
           <el-option label="未置顶" value="0" />
         </el-select>
       </el-form-item>
+      <el-form-item label="分类" prop="categoryId">
+        <el-select v-model="queryParams.categoryId" placeholder="请选择分类" clearable style="width: 120px">
+          <el-option v-for="cat in categoryOptions" :key="cat.categoryId" :label="cat.name" :value="cat.categoryId" />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" @click="resetQuery">重置</el-button>
@@ -111,6 +116,7 @@
           <span>作者：{{ detailData.user ? detailData.user.nickname : '匿名' }}</span>
           <span>单位：{{ detailData.userUnit || '-' }}</span>
           <span>部门：{{ detailData.userDept || '-' }}</span>
+          <span>分类：{{ detailData.categoryName || '-' }}</span>
           <span>发布时间：{{ detailData.createTime }}</span>
           <span>浏览：{{ detailData.viewCount }}</span>
           <span>评论：{{ detailData.commentCount }}</span>
@@ -223,6 +229,7 @@
 <script>
 import { listPost, getPost, delPost, lockPost, unlockPost, restorePost, pinPost, unpinPost, getPostLog } from '@/api/forum/post'
 import { listCommentByPost, delComment, restoreComment, getCommentLog } from '@/api/forum/comment'
+import { listAllCategory } from '@/api/forum/category'
 
 export default {
   name: 'ForumPost',
@@ -261,8 +268,10 @@ export default {
         userDept: undefined,
         isLocked: undefined,
         delFlag: '0',
-        isPinned: undefined
+        isPinned: undefined,
+        categoryId: undefined
       },
+      categoryOptions: [],
       commentList: [],
       commentLoading: false,
       commentDelFlag: '0',
@@ -283,6 +292,7 @@ export default {
   },
   created() {
     this.getList()
+    this.getCategoryList()
   },
   methods: {
     getEmbedUrl(url) {
@@ -318,6 +328,11 @@ export default {
         return `https://player.youku.com/embed/${youkuMobileMatch[1]}`
       }
       return null
+    },
+    getCategoryList() {
+      listAllCategory().then(response => {
+        this.categoryOptions = response.data
+      })
     },
     isPinned(row) {
       if (row.isPinned !== '1') return false

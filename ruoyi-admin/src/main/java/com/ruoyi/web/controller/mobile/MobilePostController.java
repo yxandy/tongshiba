@@ -12,6 +12,8 @@ import com.ruoyi.system.service.IForumPostService;
 import com.ruoyi.system.service.IForumUserService;
 import com.ruoyi.system.service.IForumPostLogService;
 import com.ruoyi.system.service.IVideoUrlService;
+import com.ruoyi.system.service.IForumCategoryService;
+import com.ruoyi.system.domain.ForumCategory;
 import com.ruoyi.web.dto.PostCreateRequest;
 import com.ruoyi.web.dto.DeletePostRequest;
 
@@ -35,6 +37,18 @@ public class MobilePostController extends BaseController {
 
     @Autowired
     private IVideoUrlService videoUrlService;
+
+    @Autowired
+    private IForumCategoryService forumCategoryService;
+
+    /**
+     * 获取分类列表（启用状态的）
+     */
+    @GetMapping("/category/list")
+    public AjaxResult listCategories() {
+        List<ForumCategory> list = forumCategoryService.selectEnabledCategoryList();
+        return success(list);
+    }
 
     /**
      * 获取帖子列表
@@ -90,6 +104,7 @@ public class MobilePostController extends BaseController {
             videoUrl = videoUrlService.resolveShortUrl(videoUrl);
         }
         post.setVideoUrl(videoUrl);
+        post.setCategoryId(request.getCategoryId());
 
         int result = forumPostService.insertForumPost(post);
         if (result > 0) {

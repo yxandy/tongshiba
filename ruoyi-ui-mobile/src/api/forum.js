@@ -34,6 +34,14 @@ export function getPostDetail(postId) {
     })
 }
 
+// 获取分类列表
+export function getCategoryList() {
+    return request({
+        url: '/mobile/forum/post/category/list',
+        method: 'get'
+    })
+}
+
 // 发布帖子
 export function createPost(data) {
     return request({

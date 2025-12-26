@@ -7,6 +7,8 @@
         <result property="userId" column="user_id" />
         <result property="userUnit" column="user_unit" />
         <result property="userDept" column="user_dept" />
+        <result property="categoryId" column="category_id" />
+        <result property="categoryName" column="category_name" />
         <result property="title" column="title" />
         <result property="content" column="content" />
         <result property="images" column="images" />
@@ -38,10 +40,11 @@
     </sql>
 
     <sql id="selectForumPostWithUser">
-        select p.post_id, p.user_id, p.user_unit, p.user_dept, p.title, p.content, p.images, p.video_url, p.view_count, p.comment_count, p.is_locked, p.del_flag, p.create_time, p.update_time, p.last_reply_time, p.is_pinned, p.pin_expire_time,
+        select p.post_id, p.user_id, p.user_unit, p.user_dept, p.category_id, c.name as category_name, p.title, p.content, p.images, p.video_url, p.view_count, p.comment_count, p.is_locked, p.del_flag, p.create_time, p.update_time, p.last_reply_time, p.is_pinned, p.pin_expire_time,
                u.user_id as u_user_id, u.wx_userid as u_wx_userid, u.nickname as u_nickname, u.avatar as u_avatar, u.department as u_department
         from forum_post p
         left join forum_user u on p.user_id = u.user_id
+        left join forum_category c on p.category_id = c.category_id
     </sql>
 
     <select id="selectForumPostById" parameterType="Long" resultMap="ForumPostWithUserResult">
@@ -82,6 +85,9 @@
             <if test="user != null and user.nickname != null and user.nickname != ''">
                 AND u.nickname like concat('%', #{user.nickname}, '%')
             </if>
+            <if test="categoryId != null">
+                AND p.category_id = #{categoryId}
+            </if>
             <if test="isPinned != null and isPinned != ''">
                 <choose>
                     <when test="isPinned.toString() == '1'.toString()">
@@ -117,6 +123,7 @@
             <if test="userId != null">user_id,</if>
             <if test="userUnit != null">user_unit,</if>
             <if test="userDept != null">user_dept,</if>
+            <if test="categoryId != null">category_id,</if>
             <if test="title != null and title != ''">title,</if>
             <if test="content != null">content,</if>
             <if test="images != null">images,</if>
@@ -131,6 +138,7 @@
             <if test="userId != null">#{userId},</if>
             <if test="userUnit != null">#{userUnit},</if>
             <if test="userDept != null">#{userDept},</if>
+            <if test="categoryId != null">#{categoryId},</if>
             <if test="title != null and title != ''">#{title},</if>
             <if test="content != null">#{content},</if>
             <if test="images != null">#{images},</if>

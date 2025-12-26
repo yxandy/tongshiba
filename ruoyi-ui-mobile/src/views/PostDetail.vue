@@ -68,17 +68,20 @@
           </div>
         </div>
 
-        <!-- 底部元信息 (作者 · 时间 · 删除) -->
+        <!-- 底部元信息 (作者 · 时间 · 删除 | 分类右对齐) -->
         <div class="post-meta-footer">
-          <span class="meta-author" @click="handleOpenUserProfile(post.user?.wxUserid)" style="cursor: pointer;">{{ post.user?.nickname || '匿名用户' }}</span>
-          <span class="meta-separator">·</span>
-          <span class="meta-time">{{ formatTime(post.createTime) }}</span>
-          <span v-if="post.isLocked === '1'" class="locked">
+          <div class="meta-left">
+            <span class="meta-author" @click="handleOpenUserProfile(post.user?.wxUserid)" style="cursor: pointer;">{{ post.user?.nickname || '匿名用户' }}</span>
             <span class="meta-separator">·</span>
-            <van-icon name="lock" /> 已锁定
-          </span>
-          <!-- 删除按钮，作者或管理员可删除 -->
-          <span class="delete-btn" v-if="canDelete" @click="confirmDelete">删除</span>
+            <span class="meta-time">{{ formatTime(post.createTime) }}</span>
+            <span v-if="post.isLocked === '1'" class="locked">
+              <span class="meta-separator">·</span>
+              <van-icon name="lock" /> 已锁定
+            </span>
+            <!-- 删除按钮，作者或管理员可删除 -->
+            <span class="delete-btn" v-if="canDelete" @click="confirmDelete">删除</span>
+          </div>
+          <span v-if="post.categoryName" class="meta-category">{{ post.categoryName }}</span>
         </div>
 
         <div class="post-stats-row">
@@ -1034,11 +1037,17 @@ function formatTime(timeStr) {
 /* Meta Footer */
 .post-meta-footer {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   font-size: 14px;
   color: #999;
   margin-top: 24px;
   margin-bottom: 12px;
+}
+
+.meta-left {
+  display: flex;
+  align-items: center;
 }
 
 .meta-author {
@@ -1049,6 +1058,15 @@ function formatTime(timeStr) {
 .meta-separator {
   margin: 0 6px;
   color: #ccc;
+}
+
+.meta-category {
+  font-size: 12px;
+  color: #1989fa;
+  background: #e6f4ff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .delete-btn {
@@ -1064,6 +1082,10 @@ function formatTime(timeStr) {
 @media (prefers-color-scheme: dark) {
   .meta-author, .delete-btn {
     color: #7d90a9;
+  }
+  .meta-category {
+    color: #1989fa;
+    background: #1a3050;
   }
 }
 

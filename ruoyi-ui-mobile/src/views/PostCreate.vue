@@ -2,6 +2,26 @@
   <div class="post-create-page">
     <!-- 表单内容 -->
     <div class="form-content">
+      <!-- 分类选择（必选） -->
+      <div class="category-picker">
+        <div class="category-header">
+          <span class="category-label">选择分类</span>
+          <span class="required-mark">*</span>
+          <span v-if="!selectedCategory" class="category-hint">请选择一个分类</span>
+        </div>
+        <div class="category-scroll">
+          <span 
+            v-for="cat in categories" 
+            :key="cat.categoryId"
+            class="category-tag"
+            :class="{ active: selectedCategory === cat.categoryId }"
+            @click="selectedCategory = cat.categoryId"
+          >
+            {{ cat.name }}
+          </span>
+        </div>
+      </div>
+
       <van-field
         ref="titleInputRef"
         v-model="title"
@@ -164,7 +184,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast, showDialog } from 'vant'
-import { createPost, syncUser } from '@/api/forum'
+import { createPost, syncUser, getCategoryList } from '@/api/forum'
 import { isWxWorkEnv, getMockUser } from '@/utils/wxwork'
 import { emojiList, emojiBasePath, getRecentEmojis, addRecentEmoji } from '@/config/emojis'
 
@@ -179,6 +199,10 @@ const showEmojiPicker = ref(false)
 const fileInput = ref(null)
 const titleInputRef = ref(null)
 const bottomOffset = ref(0)
+
+// 分类数据
+const categories = ref([])
+const selectedCategory = ref(null)
 
 // 视频相关
 const videoUrl = ref('')
@@ -253,6 +277,16 @@ onMounted(async () => {
   
   isWxWork.value = isWxWorkEnv()
   await initUser()
+  
+  // 加载分类列表
+  try {
+    const res = await getCategoryList()
+    if (res.data) {
+      categories.value = res.data
+    }
+  } catch (e) {
+    console.error('加载分类失败', e)
+  }
   
   // 自动聚焦到标题输入框
   nextTick(() => {
@@ -541,7 +575,8 @@ async function submitPost() {
       images: imageList.value.length > 0 ? JSON.stringify(imageList.value) : '',
       videoUrl: videoUrl.value || '',
       userUnit: user.unit || '',
-      userDept: user.department || ''
+      userDept: user.department || '',
+      categoryId: selectedCategory.value
     })
     
     // 如果返回成功
@@ -685,6 +720,85 @@ async function submitPost() {
   color: #ee0a24;
   background: #fff;
   border-radius: 50%;
+}
+
+/* 分类选择器 */
+.category-picker {
+  padding: 12px 0 8px;
+  background: #fff;
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.category-label {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+}
+
+.required-mark {
+  color: #ee0a24;
+  margin-left: 2px;
+  font-size: 14px;
+}
+
+.category-hint {
+  font-size: 12px;
+  color: #ee0a24;
+  margin-left: 10px;
+}
+
+.category-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.category-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.category-tag {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  font-size: 13px;
+  color: #666;
+  background: #f5f5f5;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.category-tag.active {
+  color: #fff;
+  background: #1989fa;
+  border-color: #1989fa;
+}
+
+@media (prefers-color-scheme: dark) {
+  .category-picker {
+    background: #000;
+  }
+  .category-label {
+    color: #f5f5f5;
+  }
+  .category-hint {
+    color: #ff6b6b;
+  }
+  .category-tag {
+    color: #aaa;
+    background: #2c2c2c;
+  }
+  .category-tag.active {
+    color: #fff;
+    background: #1989fa;
+    border-color: #1989fa;
+  }
 }
 
 /* 底部工具栏容器 */

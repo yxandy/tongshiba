@@ -25,6 +25,24 @@
         </template>
       </van-nav-bar>
 
+      <!-- 分类筛选 -->
+      <div class="category-filter">
+        <div class="filter-scroll">
+          <span 
+            class="filter-tag" 
+            :class="{ active: selectedCategoryId === null }"
+            @click="selectedCategoryId = null"
+          >全部</span>
+          <span 
+            v-for="cat in categories" 
+            :key="cat.categoryId"
+            class="filter-tag"
+            :class="{ active: selectedCategoryId === cat.categoryId }"
+            @click="selectedCategoryId = cat.categoryId"
+          >{{ cat.name }}</span>
+        </div>
+      </div>
+
       <!-- 下拉刷新 + 帖子列表 -->
       <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
         <van-list
@@ -83,9 +101,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getPostList, syncUser } from '@/api/forum'
+import { getPostList, syncUser, getCategoryList } from '@/api/forum'
 import { isWxWorkEnv, getAccessDeniedMessage, getMockUser, loginWithWxWork } from '@/utils/wxwork'
 import { renderEmojis } from '@/config/emojis'
 
@@ -110,6 +128,18 @@ const menuActions = [
   { text: '发过的帖子', value: 'myPosts' }
 ]
 
+// 分类数据
+const categories = ref([])
+const selectedCategoryId = ref(null)
+
+// 监听分类变化，自动刷新列表
+watch(selectedCategoryId, () => {
+  pageNum.value = 1
+  finished.value = false
+  postList.value = []
+  loadMore()
+})
+
 function onMenuSelect(action) {
   showMenu.value = false
   if (action.value === 'followed') {
@@ -122,6 +152,16 @@ function onMenuSelect(action) {
 // 检查环境
 onMounted(async () => {
   isWxWork.value = isWxWorkEnv()
+  
+  // 加载分类列表
+  try {
+    const res = await getCategoryList()
+    if (res.data) {
+      categories.value = res.data
+    }
+  } catch (e) {
+    console.error('加载分类失败', e)
+  }
   
   // 开发环境或企业微信环境，同步用户信息
   if (isDev.value || isWxWork.value) {
@@ -180,7 +220,11 @@ async function loadMore() {
   
   loading.value = true
   try {
-    const res = await getPostList({ pageNum: pageNum.value, pageSize: pageSize.value })
+    const params = { pageNum: pageNum.value, pageSize: pageSize.value }
+    if (selectedCategoryId.value) {
+      params.categoryId = selectedCategoryId.value
+    }
+    const res = await getPostList(params)
     const rows = res.rows || []
     const total = res.total || 0
     
@@ -289,6 +333,7 @@ function isPinned(post) {
 .post-list-page {
   min-height: 100vh;
   background: #f5f5f5;
+  padding-top: 46px; /* 分类筛选栏高度 */
   padding-bottom: 85px; /* 配合更高的发帖按钮 */
 }
 
@@ -305,6 +350,59 @@ function isPinned(post) {
   justify-content: center;
   height: 100vh;
   color: var(--text-secondary);
+}
+
+/* 分类筛选栏 */
+.category-filter {
+  position: fixed;
+  top: 46px; /* 导航栏高度 */
+  left: 0;
+  right: 0;
+  z-index: 99;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+.filter-scroll {
+  display: flex;
+  overflow-x: auto;
+  padding: 10px 16px;
+  gap: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-tag {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  font-size: 14px;
+  color: #666;
+  background: #f5f5f5;
+  border-radius: 14px;
+  white-space: nowrap;
+}
+
+.filter-tag.active {
+  color: #fff;
+  background: #1989fa;
+}
+
+@media (prefers-color-scheme: dark) {
+  .category-filter {
+    background: #191919;
+    border-bottom-color: #333;
+  }
+  .filter-tag {
+    color: #aaa;
+    background: #2c2c2c;
+  }
+  .filter-tag.active {
+    color: #fff;
+    background: #1989fa;
+  }
 }
 
 .post-item {

@@ -51,6 +51,15 @@ export function createPost(data) {
     })
 }
 
+// 更新帖子
+export function updatePost(data) {
+    return request({
+        url: '/mobile/forum/post',
+        method: 'put',
+        data
+    })
+}
+
 // 获取评论列表
 export function getCommentList(postId, params) {
     return request({

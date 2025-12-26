@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ForumPostEditHistoryMapper">
+
+    <resultMap type="com.ruoyi.system.domain.ForumPostEditHistory" id="ForumPostEditHistoryResult">
+        <id     property="historyId"    column="history_id"    />
+        <result property="postId"       column="post_id"       />
+        <result property="userId"       column="user_id"       />
+        <result property="title"        column="title"         />
+        <result property="content"      column="content"       />
+        <result property="images"       column="images"        />
+        <result property="videoUrl"     column="video_url"     />
+        <result property="categoryId"   column="category_id"   />
+        <result property="editTime"     column="edit_time"     />
+        <result property="categoryName" column="category_name" />
+    </resultMap>
+
+    <sql id="selectEditHistoryVo">
+        select h.history_id, h.post_id, h.user_id, h.title, h.content, h.images, h.video_url, h.category_id, h.edit_time,
+               c.name as category_name
+        from forum_post_edit_history h
+        left join forum_category c on h.category_id = c.category_id
+    </sql>
+
+    <select id="selectEditHistoryByPostId" parameterType="Long" resultMap="ForumPostEditHistoryResult">
+        <include refid="selectEditHistoryVo"/>
+        where h.post_id = #{postId}
+        order by h.edit_time desc
+    </select>
+
+    <select id="selectEditHistoryById" parameterType="Long" resultMap="ForumPostEditHistoryResult">
+        <include refid="selectEditHistoryVo"/>
+        where h.history_id = #{historyId}
+    </select>
+
+    <insert id="insertEditHistory" parameterType="com.ruoyi.system.domain.ForumPostEditHistory" useGeneratedKeys="true" keyProperty="historyId">
+        insert into forum_post_edit_history (
+            post_id,
+            user_id,
+            title,
+            content,
+            images,
+            video_url,
+            category_id,
+            edit_time
+        ) values (
+            #{postId},
+            #{userId},
+            #{title},
+            #{content},
+            #{images},
+            #{videoUrl},
+            #{categoryId},
+            sysdate()
+        )
+    </insert>
+
+    <select id="countEditHistoryByPostId" parameterType="Long" resultType="int">
+        select count(*) from forum_post_edit_history where post_id = #{postId}
+    </select>
+
+</mapper>

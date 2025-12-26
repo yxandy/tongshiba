@@ -182,13 +182,18 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { showToast, showDialog } from 'vant'
-import { createPost, syncUser, getCategoryList } from '@/api/forum'
+import { createPost, updatePost, getPostDetail, syncUser, getCategoryList } from '@/api/forum'
 import { isWxWorkEnv, getMockUser } from '@/utils/wxwork'
 import { emojiList, emojiBasePath, getRecentEmojis, addRecentEmoji } from '@/config/emojis'
 
 const router = useRouter()
+const route = useRoute()
+
+// 编辑模式判断
+const isEditMode = computed(() => route.name === 'PostEdit')
+const postId = computed(() => route.params.id)
 
 // 表单数据
 const title = ref('')
@@ -343,22 +348,38 @@ onMounted(async () => {
     console.error('加载分类失败', e)
   }
   
-  // 检测草稿并询问是否恢复
-  const draft = loadDraft()
-  if (hasDraftContent(draft)) {
+  // 编辑模式：加载帖子数据
+  if (isEditMode.value && postId.value) {
     try {
-      await showDialog({
-        title: '发现草稿',
-        message: '检测到未完成的草稿，是否继续编辑？',
-        showCancelButton: true,
-        confirmButtonText: '恢复草稿',
-        cancelButtonText: '放弃'
-      })
-      // 用户点击"恢复草稿"
-      restoreDraft(draft)
-    } catch {
-      // 用户点击"放弃"
-      clearDraft()
+      const res = await getPostDetail(postId.value)
+      const post = res.data
+      title.value = post.title || ''
+      content.value = post.content || ''
+      imageList.value = post.images ? JSON.parse(post.images) : []
+      videoUrl.value = post.videoUrl || ''
+      selectedCategory.value = post.categoryId || null
+    } catch (e) {
+      console.error('加载帖子失败', e)
+      showToast('加载帖子失败')
+    }
+  } else {
+    // 新建模式：检测草稿并询问是否恢复
+    const draft = loadDraft()
+    if (hasDraftContent(draft)) {
+      try {
+        await showDialog({
+          title: '发现草稿',
+          message: '检测到未完成的草稿，是否继续编辑？',
+          showCancelButton: true,
+          confirmButtonText: '恢复草稿',
+          cancelButtonText: '放弃'
+        })
+        // 用户点击"恢复草稿"
+        restoreDraft(draft)
+      } catch {
+        // 用户点击"放弃"
+        clearDraft()
+      }
     }
   }
   
@@ -523,8 +544,8 @@ function removeVideo() {
   videoUrl.value = ''
 }
 
-// 压缩图片
-function compressImage(file, maxWidth = 1200, quality = 0.7) {
+// 压缩图片（优化后：maxWidth=800, quality=0.5 以加快上传）
+function compressImage(file, maxWidth = 800, quality = 0.5) {
   return new Promise((resolve) => {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -648,29 +669,53 @@ async function submitPost() {
 
   submitting.value = true
   try {
-    const res = await createPost({
-      wxUserid: user.wxUserid,
-      title: title.value.trim(),
-      content: content.value.trim(),
-      images: imageList.value.length > 0 ? JSON.stringify(imageList.value) : '',
-      videoUrl: videoUrl.value || '',
-      userUnit: user.unit || '',
-      userDept: user.department || '',
-      categoryId: selectedCategory.value
-    })
-    
-    // 如果返回成功
-    showToast('发布成功')
-    clearDraft() // 发布成功后清除草稿
+    if (isEditMode.value) {
+      // 编辑模式：调用更新接口
+      await updatePost({
+        postId: postId.value,
+        wxUserid: user.wxUserid,
+        title: title.value.trim(),
+        content: content.value.trim(),
+        images: imageList.value.length > 0 ? JSON.stringify(imageList.value) : '',
+        videoUrl: videoUrl.value || '',
+        categoryId: selectedCategory.value
+      })
+      showToast('修改成功')
+    } else {
+      // 新建模式：调用创建接口
+      await createPost({
+        wxUserid: user.wxUserid,
+        title: title.value.trim(),
+        content: content.value.trim(),
+        images: imageList.value.length > 0 ? JSON.stringify(imageList.value) : '',
+        videoUrl: videoUrl.value || '',
+        userUnit: user.unit || '',
+        userDept: user.department || '',
+        categoryId: selectedCategory.value
+      })
+      showToast('发布成功')
+      clearDraft() // 发布成功后清除草稿
+    }
     
     // 等待一下让用户看到成功提示
     setTimeout(() => {
-      router.replace('/posts')
+      if (isEditMode.value) {
+        router.replace(`/post/${postId.value}`)
+      } else {
+        router.replace('/posts')
+      }
     }, 500)
     
   } catch (e) {
     console.error(e)
-    showToast('发布失败')
+    // 获取详细错误信息
+    let errorMsg = isEditMode.value ? '修改失败' : '发布失败'
+    if (e.response?.data?.msg) {
+      errorMsg = e.response.data.msg
+    } else if (e.message) {
+      errorMsg = e.message
+    }
+    showToast(errorMsg)
   } finally {
     submitting.value = false
   }

@@ -86,6 +86,8 @@
               <span class="meta-separator">·</span>
               <van-icon name="lock" /> 已锁定
             </span>
+            <!-- 编辑按钮，作者且10分钟内可编辑 -->
+            <span class="edit-btn" v-if="canEdit" @click="goToEdit">编辑</span>
             <!-- 删除按钮，作者或管理员可删除 -->
             <span class="delete-btn" v-if="canDelete" @click="confirmDelete">删除</span>
           </div>
@@ -342,6 +344,21 @@ const isAdmin = computed(() => {
 const canDelete = computed(() => {
   return isAuthor.value || isAdmin.value
 })
+
+// 10分钟编辑时间窗口（毫秒）
+const EDIT_TIME_WINDOW_MS = 10 * 60 * 1000
+
+// 计算是否可以编辑（作者且发布10分钟内）
+const canEdit = computed(() => {
+  if (!isAuthor.value || !post.value?.createTime) return false
+  const elapsed = Date.now() - new Date(post.value.createTime).getTime()
+  return elapsed < EDIT_TIME_WINDOW_MS
+})
+
+// 跳转到编辑页面
+function goToEdit() {
+  router.push(`/post/edit/${post.value.postId}`)
+}
 
 // 计算图片列表
 const images = computed(() => {
@@ -1100,6 +1117,12 @@ function formatTime(timeStr) {
 
 .delete-btn {
   color: #576b95;
+  margin-left: 10px;
+  cursor: pointer;
+}
+
+.edit-btn {
+  color: #1989fa;
   margin-left: 10px;
   cursor: pointer;
 }

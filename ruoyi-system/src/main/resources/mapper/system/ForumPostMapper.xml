@@ -157,6 +157,8 @@
             <if test="title != null and title != ''">title = #{title},</if>
             <if test="content != null">content = #{content},</if>
             <if test="images != null">images = #{images},</if>
+            <if test="videoUrl != null">video_url = #{videoUrl},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
             <if test="isLocked != null">is_locked = #{isLocked},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="isPinned != null">is_pinned = #{isPinned},</if>

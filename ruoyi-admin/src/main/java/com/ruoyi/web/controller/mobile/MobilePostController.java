@@ -8,13 +8,16 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.system.domain.ForumPost;
 import com.ruoyi.system.domain.ForumUser;
+import com.ruoyi.system.domain.ForumPostEditHistory;
 import com.ruoyi.system.service.IForumPostService;
 import com.ruoyi.system.service.IForumUserService;
 import com.ruoyi.system.service.IForumPostLogService;
 import com.ruoyi.system.service.IVideoUrlService;
 import com.ruoyi.system.service.IForumCategoryService;
+import com.ruoyi.system.service.IForumPostEditHistoryService;
 import com.ruoyi.system.domain.ForumCategory;
 import com.ruoyi.web.dto.PostCreateRequest;
+import com.ruoyi.web.dto.PostUpdateRequest;
 import com.ruoyi.web.dto.DeletePostRequest;
 
 /**
@@ -40,6 +43,12 @@ public class MobilePostController extends BaseController {
 
     @Autowired
     private IForumCategoryService forumCategoryService;
+
+    @Autowired
+    private IForumPostEditHistoryService editHistoryService;
+
+    /** 编辑时间窗口：10分钟（毫秒） */
+    private static final long EDIT_TIME_WINDOW_MS = 10 * 60 * 1000;
 
     /**
      * 获取分类列表（启用状态的）
@@ -110,6 +119,62 @@ public class MobilePostController extends BaseController {
         if (result > 0) {
             // 记录发帖日志
             forumPostLogService.logAction(post.getPostId(), "create", null, user.getNickname(), "用户发布帖子");
+        }
+        return toAjax(result);
+    }
+
+    /**
+     * 更新帖子 (作者可在10分钟内编辑)
+     */
+    @PutMapping
+    public AjaxResult updatePost(@RequestBody PostUpdateRequest request) {
+        ForumUser user = forumUserService.selectForumUserByWxUserid(request.getWxUserid());
+        if (user == null) {
+            return error("用户不存在");
+        }
+
+        ForumPost post = forumPostService.selectForumPostById(request.getPostId());
+        if (post == null) {
+            return error("帖子不存在");
+        }
+
+        // 权限检查: 只有作者可编辑
+        if (!user.getUserId().equals(post.getUserId())) {
+            return error("您没有权限编辑此帖子");
+        }
+
+        // 时间窗口检查: 10分钟内可编辑
+        long elapsedTime = System.currentTimeMillis() - post.getCreateTime().getTime();
+        if (elapsedTime > EDIT_TIME_WINDOW_MS) {
+            return error("帖子发布超过10分钟，无法编辑");
+        }
+
+        // 保存编辑前的快照到历史表
+        ForumPostEditHistory history = new ForumPostEditHistory();
+        history.setPostId(post.getPostId());
+        history.setUserId(user.getUserId());
+        history.setTitle(post.getTitle());
+        history.setContent(post.getContent());
+        history.setImages(post.getImages());
+        history.setVideoUrl(post.getVideoUrl());
+        history.setCategoryId(post.getCategoryId());
+        editHistoryService.insertEditHistory(history);
+
+        // 更新帖子
+        post.setTitle(request.getTitle());
+        post.setContent(request.getContent());
+        post.setImages(request.getImages());
+        // 解析视频短链接
+        String videoUrl = request.getVideoUrl();
+        if (videoUrl != null && !videoUrl.isEmpty()) {
+            videoUrl = videoUrlService.resolveShortUrl(videoUrl);
+        }
+        post.setVideoUrl(videoUrl);
+        post.setCategoryId(request.getCategoryId());
+
+        int result = forumPostService.updateForumPost(post);
+        if (result > 0) {
+            forumPostLogService.logAction(post.getPostId(), "edit", null, user.getNickname(), "用户编辑帖子");
         }
         return toAjax(result);
     }

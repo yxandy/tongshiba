@@ -73,3 +73,19 @@ export function getPostLog(postId) {
         method: 'get'
     })
 }
+
+// 获取帖子编辑历史
+export function getEditHistory(postId) {
+    return request({
+        url: '/forum/post/edit-history/list/' + postId,
+        method: 'get'
+    })
+}
+
+// 获取帖子编辑次数
+export function getEditHistoryCount(postId) {
+    return request({
+        url: '/forum/post/edit-history/count/' + postId,
+        method: 'get'
+    })
+}

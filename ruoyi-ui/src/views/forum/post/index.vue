@@ -91,10 +91,11 @@
         </template>
       </el-table-column>
       <el-table-column label="发布时间" prop="createTime" width="160" />
-      <el-table-column label="操作" width="300" fixed="right">
+      <el-table-column label="操作" width="340" fixed="right">
         <template slot-scope="scope">
           <el-button size="mini" type="text" @click="handleView(scope.row)">查看</el-button>
           <el-button size="mini" type="text" @click="handleViewLog(scope.row)">日志</el-button>
+          <el-button size="mini" type="text" @click="handleViewEditHistory(scope.row)">编辑历史</el-button>
           <el-button size="mini" type="text" v-if="!isPinned(scope.row) && scope.row.delFlag !== '1'" @click="handlePin(scope.row)" v-hasPermi="['forum:post:lock']">置顶</el-button>
           <el-button size="mini" type="text" v-if="isPinned(scope.row) && scope.row.delFlag !== '1'" style="color: #e6a23c" @click="handleUnpin(scope.row)" v-hasPermi="['forum:post:lock']">取消置顶</el-button>
           <el-button size="mini" type="text" v-if="scope.row.isLocked === '0' && scope.row.delFlag !== '1'" @click="handleLock(scope.row)" v-hasPermi="['forum:post:lock']">锁定</el-button>
@@ -223,11 +224,37 @@
       </el-table>
       <el-empty v-if="commentLogList.length === 0 && !commentLogLoading" description="暂无删除日志" />
     </el-dialog>
+
+    <!-- 编辑历史弹窗 -->
+    <el-dialog :title="'编辑历史 - ' + editHistoryPostTitle" :visible.sync="editHistoryDialogVisible" width="800px" append-to-body>
+      <el-table v-loading="editHistoryLoading" :data="editHistoryList" size="small" max-height="400">
+        <el-table-column label="编辑时间" prop="editTime" width="160" />
+        <el-table-column label="标题" prop="title" :show-overflow-tooltip="true" />
+        <el-table-column label="正文摘要" width="200">
+          <template slot-scope="scope">
+            <span>{{ scope.row.content ? scope.row.content.substring(0, 50) + (scope.row.content.length > 50 ? '...' : '') : '-' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="图片" width="80" align="center">
+          <template slot-scope="scope">
+            <span v-if="scope.row.images">{{ parseImages(scope.row.images).length }}张</span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="视频" width="80" align="center">
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.videoUrl" type="success" size="mini">有</el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-if="editHistoryList.length === 0 && !editHistoryLoading" description="该帖子未被编辑过" />
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listPost, getPost, delPost, lockPost, unlockPost, restorePost, pinPost, unpinPost, getPostLog } from '@/api/forum/post'
+import { listPost, getPost, delPost, lockPost, unlockPost, restorePost, pinPost, unpinPost, getPostLog, getEditHistory } from '@/api/forum/post'
 import { listCommentByPost, delComment, restoreComment, getCommentLog } from '@/api/forum/comment'
 import { listAllCategory } from '@/api/forum/category'
 
@@ -277,7 +304,12 @@ export default {
       commentDelFlag: '0',
       commentLogDialogVisible: false,
       commentLogLoading: false,
-      commentLogList: []
+      commentLogList: [],
+      // 编辑历史
+      editHistoryDialogVisible: false,
+      editHistoryLoading: false,
+      editHistoryList: [],
+      editHistoryPostTitle: ''
     }
   },
   computed: {
@@ -501,6 +533,25 @@ export default {
       }).finally(() => {
         this.commentLogLoading = false
       })
+    },
+    handleViewEditHistory(row) {
+      this.editHistoryPostTitle = row.title || `帖子#${row.postId}`
+      this.editHistoryDialogVisible = true
+      this.editHistoryLoading = true
+      this.editHistoryList = []
+      getEditHistory(row.postId).then(response => {
+        this.editHistoryList = response.data || []
+      }).finally(() => {
+        this.editHistoryLoading = false
+      })
+    },
+    parseImages(imagesStr) {
+      if (!imagesStr) return []
+      try {
+        return JSON.parse(imagesStr)
+      } catch (e) {
+        return []
+      }
     }
   }
 }

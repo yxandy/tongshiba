@@ -42,21 +42,23 @@ export function getCategoryList() {
     })
 }
 
-// 发布帖子
-export function createPost(data) {
+// 发布帖子（支持上传进度）
+export function createPost(data, onUploadProgress) {
     return request({
         url: '/mobile/forum/post',
         method: 'post',
-        data
+        data,
+        onUploadProgress
     })
 }
 
-// 更新帖子
-export function updatePost(data) {
+// 更新帖子（支持上传进度）
+export function updatePost(data, onUploadProgress) {
     return request({
         url: '/mobile/forum/post',
         method: 'put',
-        data
+        data,
+        onUploadProgress
     })
 }
 

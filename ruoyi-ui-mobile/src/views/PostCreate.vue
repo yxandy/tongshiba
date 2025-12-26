@@ -1,5 +1,23 @@
 <template>
   <div class="post-create-page">
+    <!-- 上传进度遮罩 -->
+    <div v-if="submitting" class="upload-overlay">
+      <div class="upload-progress-container">
+        <div class="progress-circle">
+          <svg viewBox="0 0 100 100">
+            <circle class="progress-bg" cx="50" cy="50" r="45" />
+            <circle 
+              class="progress-bar" 
+              cx="50" cy="50" r="45"
+              :style="{ strokeDashoffset: progressOffset }"
+            />
+          </svg>
+          <span class="progress-text">{{ uploadProgress }}%</span>
+        </div>
+        <p class="upload-hint">{{ uploadProgress < 100 ? '正在上传...' : '处理中...' }}</p>
+      </div>
+    </div>
+
     <!-- 表单内容 -->
     <div class="form-content">
       <!-- 分类选择（必选） -->
@@ -195,11 +213,14 @@ const route = useRoute()
 const isEditMode = computed(() => route.name === 'PostEdit')
 const postId = computed(() => route.params.id)
 
+
+
 // 表单数据
 const title = ref('')
 const content = ref('')
 const imageList = ref([])
 const submitting = ref(false)
+const uploadProgress = ref(0)  // 上传进度百分比
 const showEmojiPicker = ref(false)
 const fileInput = ref(null)
 const titleInputRef = ref(null)
@@ -222,6 +243,20 @@ const VIDEO_PLATFORMS = [
   { name: '腾讯视频', pattern: /v\.qq\.com|m\.v\.qq\.com|qq\.com\/x\/cover/i },
   { name: 'B站', pattern: /bilibili\.com|b23\.tv/i }
 ]
+
+// 是否可以提交
+// 规则：1.分类必选 2.标题必填 3.内容（文字/图片/视频）至少一个
+const canSubmit = computed(() => {
+  // 1. 必须选择分类
+  if (!selectedCategory.value) return false
+  // 2. 必须有标题
+  if (!title.value.trim()) return false
+  // 3. 必须有内容（文字、图片、视频至少一种）
+  const hasContent = content.value.trim().length > 0
+  const hasImages = imageList.value.length > 0
+  const hasVideo = !!videoUrl.value
+  return hasContent || hasImages || hasVideo
+})
 
 // 草稿存储相关
 const DRAFT_KEY = 'forum_post_draft'
@@ -410,10 +445,19 @@ onUnmounted(() => {
   }
 })
 
-// 监听表单变化，自动保存草稿
+// 监听表单变化，自动保存草稿（仅新建模式）
 watch([title, content, imageList, videoUrl, selectedCategory], () => {
-  saveDraftThrottled()
+  // 编辑模式下不保存草稿
+  if (!isEditMode.value) {
+    saveDraftThrottled()
+  }
 }, { deep: true })
+
+// 圆形进度条的 strokeDashoffset 计算
+const progressOffset = computed(() => {
+  const circumference = 2 * Math.PI * 45 // r=45
+  return circumference - (uploadProgress.value / 100) * circumference
+})
 
 async function initUser() {
   const storedUser = localStorage.getItem('forumUser')
@@ -431,14 +475,7 @@ async function initUser() {
   }
 }
 
-// 是否可以提交：有标题 + (有内容 或 有图片 或 有视频)
-const canSubmit = computed(() => {
-  const hasTitle = title.value.trim().length > 0
-  const hasContent = content.value.trim().length > 0
-  const hasImages = imageList.value.length > 0
-  const hasVideo = videoUrl.value.length > 0
-  return hasTitle && (hasContent || hasImages || hasVideo)
-})
+
 
 // 返回
 function goBack() {
@@ -668,6 +705,15 @@ async function submitPost() {
   }
 
   submitting.value = true
+  uploadProgress.value = 0
+  
+  // 上传进度回调
+  const onUploadProgress = (progressEvent) => {
+    if (progressEvent.total) {
+      uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+    }
+  }
+  
   try {
     if (isEditMode.value) {
       // 编辑模式：调用更新接口
@@ -679,8 +725,9 @@ async function submitPost() {
         images: imageList.value.length > 0 ? JSON.stringify(imageList.value) : '',
         videoUrl: videoUrl.value || '',
         categoryId: selectedCategory.value
-      })
+      }, onUploadProgress)
       showToast('修改成功')
+      clearDraft() // 修改成功后也清除草稿
     } else {
       // 新建模式：调用创建接口
       await createPost({
@@ -692,7 +739,7 @@ async function submitPost() {
         userUnit: user.unit || '',
         userDept: user.department || '',
         categoryId: selectedCategory.value
-      })
+      }, onUploadProgress)
       showToast('发布成功')
       clearDraft() // 发布成功后清除草稿
     }
@@ -718,6 +765,7 @@ async function submitPost() {
     showToast(errorMsg)
   } finally {
     submitting.value = false
+    uploadProgress.value = 0
   }
 }
 </script>
@@ -1195,5 +1243,68 @@ async function submitPost() {
   font-size: 12px;
   color: #ee0a24;
   margin: 8px 0 0 0;
+}
+
+/* 上传进度遮罩 */
+.upload-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.upload-progress-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.progress-circle {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.progress-circle svg {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.progress-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 8;
+}
+
+.progress-bar {
+  fill: none;
+  stroke: #1989fa;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 282.74; /* 2 * PI * 45 */
+  transition: stroke-dashoffset 0.1s ease;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.upload-hint {
+  margin-top: 16px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
 }
 </style>

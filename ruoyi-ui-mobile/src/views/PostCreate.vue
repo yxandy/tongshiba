@@ -218,6 +218,61 @@ const VIDEO_PLATFORMS = [
   { name: 'B站', pattern: /bilibili\.com|b23\.tv/i }
 ]
 
+// 草稿存储相关
+const DRAFT_KEY = 'forum_post_draft'
+let saveDraftTimer = null
+
+// 保存草稿到 localStorage
+function saveDraft() {
+  const draft = {
+    title: title.value,
+    content: content.value,
+    images: imageList.value,
+    videoUrl: videoUrl.value,
+    categoryId: selectedCategory.value,
+    savedAt: Date.now()
+  }
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+}
+
+// 节流保存草稿（2秒内只保存一次）
+function saveDraftThrottled() {
+  if (saveDraftTimer) clearTimeout(saveDraftTimer)
+  saveDraftTimer = setTimeout(() => {
+    saveDraft()
+  }, 2000)
+}
+
+// 加载草稿
+function loadDraft() {
+  const draftStr = localStorage.getItem(DRAFT_KEY)
+  if (!draftStr) return null
+  try {
+    return JSON.parse(draftStr)
+  } catch {
+    return null
+  }
+}
+
+// 清除草稿
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY)
+}
+
+// 恢复草稿到表单
+function restoreDraft(draft) {
+  title.value = draft.title || ''
+  content.value = draft.content || ''
+  imageList.value = draft.images || []
+  videoUrl.value = draft.videoUrl || ''
+  selectedCategory.value = draft.categoryId || null
+}
+
+// 检查草稿是否有内容
+function hasDraftContent(draft) {
+  return draft && (draft.title || draft.content || (draft.images && draft.images.length > 0) || draft.videoUrl)
+}
+
 // iOS 输入法辅助栏高度（包含上下箭头和“完成”按钮）
 const IOS_ACCESSORY_BAR_HEIGHT = 44
 
@@ -288,6 +343,25 @@ onMounted(async () => {
     console.error('加载分类失败', e)
   }
   
+  // 检测草稿并询问是否恢复
+  const draft = loadDraft()
+  if (hasDraftContent(draft)) {
+    try {
+      await showDialog({
+        title: '发现草稿',
+        message: '检测到未完成的草稿，是否继续编辑？',
+        showCancelButton: true,
+        confirmButtonText: '恢复草稿',
+        cancelButtonText: '放弃'
+      })
+      // 用户点击"恢复草稿"
+      restoreDraft(draft)
+    } catch {
+      // 用户点击"放弃"
+      clearDraft()
+    }
+  }
+  
   // 自动聚焦到标题输入框
   nextTick(() => {
     if (titleInputRef.value) {
@@ -314,6 +388,11 @@ onUnmounted(() => {
     window.visualViewport.removeEventListener('scroll', handleViewportResize)
   }
 })
+
+// 监听表单变化，自动保存草稿
+watch([title, content, imageList, videoUrl, selectedCategory], () => {
+  saveDraftThrottled()
+}, { deep: true })
 
 async function initUser() {
   const storedUser = localStorage.getItem('forumUser')
@@ -348,6 +427,7 @@ function goBack() {
       message: '确定要放弃编辑吗？',
       showCancelButton: true
     }).then(() => {
+      clearDraft() // 用户确认放弃编辑，清除草稿
       router.back()
     }).catch(() => {})
   } else {
@@ -581,6 +661,7 @@ async function submitPost() {
     
     // 如果返回成功
     showToast('发布成功')
+    clearDraft() // 发布成功后清除草稿
     
     // 等待一下让用户看到成功提示
     setTimeout(() => {

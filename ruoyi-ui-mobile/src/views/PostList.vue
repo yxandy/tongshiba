@@ -12,6 +12,7 @@
       <!-- 顶部导航 -->
       <van-nav-bar title="帖子列表" fixed placeholder class="nav-bar-dark">
         <template #right>
+          <van-icon name="search" size="22" style="margin-right: 16px" @click="goToSearch" />
           <van-popover 
             v-model:show="showMenu" 
             :actions="menuActions" 
@@ -62,40 +63,12 @@
           @load="loadMore"
         >
           <!-- 帖子列表项 -->
-          <div 
-            v-for="post in postList" 
-            :key="post.postId" 
-            class="post-item"
+          <PostItem
+            v-for="post in postList"
+            :key="post.postId"
+            :post="post"
             @click="goToDetail(post.postId)"
-          >
-            <!-- 标题 -->
-            <div class="post-title">
-              <span v-if="isPinned(post)" class="pin-tag">【置顶】</span>
-              {{ post.title }}
-            </div>
-            
-            <!-- 内容摘要 (支持表情渲染) -->
-            <div class="post-content" v-html="truncateContent(post.content)"></div>
-            
-            <!-- 如果没有文字内容但有图片，显示图片图标 -->
-            <div v-if="(!post.content || !post.content.trim()) && post.images" class="post-image-icon">
-              <van-icon name="photo-o" size="20" />
-            </div>
-            
-            <!-- 如果没有文字内容但有视频，显示视频图标 -->
-            <div v-if="(!post.content || !post.content.trim()) && !post.images && post.videoUrl" class="post-video-icon">
-              <van-icon name="video-o" size="20" />
-            </div>
-
-            <!-- 底部信息 -->
-            <div class="post-footer">
-              <span class="author-name">{{ post.user?.nickname || '匿名用户' }}</span>
-              <div class="post-stats">
-                <span><van-icon name="eye-o" /> {{ post.viewCount || 0 }}</span>
-                <span><van-icon name="comment-o" /> {{ post.commentCount || 0 }}</span>
-              </div>
-            </div>
-          </div>
+          />
         </van-list>
       </van-pull-refresh>
 
@@ -115,7 +88,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getPostList, syncUser, getCategoryList } from '@/api/forum'
 import { isWxWorkEnv, getAccessDeniedMessage, getMockUser, loginWithWxWork } from '@/utils/wxwork'
-import { renderEmojis } from '@/config/emojis'
+import PostItem from '@/components/PostItem.vue'
 
 const router = useRouter()
 
@@ -279,28 +252,9 @@ function goToCreate() {
   router.push('/post/create')
 }
 
-// 截断内容 (并渲染表情)
-function truncateContent(content) {
-  if (!content) return ''
-  const truncated = content.length > 50 ? content.substring(0, 50) + '...' : content
-  return renderEmojis(truncated)
-}
-
-// 解析图片
-function getImages(images) {
-  if (!images) return []
-  try {
-    return JSON.parse(images)
-  } catch {
-    return []
-  }
-}
-
-// 判断是否置顶中
-function isPinned(post) {
-  if (post.isPinned !== '1') return false
-  if (!post.pinExpireTime) return true // 永久置顶
-  return new Date(post.pinExpireTime) > new Date()
+// 跳转搜索
+function goToSearch() {
+  router.push('/post/search')
 }
 </script>
 

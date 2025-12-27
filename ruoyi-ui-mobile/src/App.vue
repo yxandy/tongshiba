@@ -1,6 +1,10 @@
 <template>
   <div v-if="isAllowed">
-    <router-view />
+    <router-view v-slot="{ Component }">
+      <keep-alive :include="['PostSearch', 'PostList']">
+        <component :is="Component" />
+      </keep-alive>
+    </router-view>
   </div>
   <div v-else class="access-denied">
     <div class="denied-content">

@@ -16,7 +16,10 @@ import {
     PullRefresh,
     Toast,
     Dialog,
-    ActionSheet
+    ActionSheet,
+    Search,
+    Empty,
+    Skeleton
 } from 'vant'
 import 'vant/lib/index.css'
 import './style.css'
@@ -25,6 +28,7 @@ import './style.css'
 const routes = [
     { path: '/', redirect: '/posts' },
     { path: '/posts', name: 'PostList', component: () => import('./views/PostList.vue') },
+    { path: '/post/search', name: 'PostSearch', component: () => import('./views/PostSearch.vue') },
     { path: '/post/:id', name: 'PostDetail', component: () => import('./views/PostDetail.vue') },
     { path: '/post/create', name: 'PostCreate', component: () => import('./views/PostCreate.vue') },
     { path: '/post/edit/:id', name: 'PostEdit', component: () => import('./views/PostCreate.vue') },
@@ -59,6 +63,9 @@ app.use(Toast)
 app.use(Dialog)
 app.use(ActionSheet)
 app.use(Popover)
+app.use(Search)
+app.use(Empty)
+app.use(Skeleton)
 
 app.use(router)
 app.mount('#app')

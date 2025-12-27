@@ -4,7 +4,7 @@ import { showToast } from 'vant'
 // 创建 axios 实例
 const request = axios.create({
     baseURL: '/tongshiba-api', // 后端 API 基础路径
-    timeout: 10000
+    timeout: 30000 // 30秒超时，适应图片上传等慢请求
 })
 
 // 请求拦截器

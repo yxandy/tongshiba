@@ -44,23 +44,25 @@ export function getCategoryList() {
     })
 }
 
-// 发布帖子（支持上传进度）
+// 发布帖子（支持上传进度，60秒超时）
 export function createPost(data, onUploadProgress) {
     return request({
         url: '/mobile/forum/post',
         method: 'post',
         data,
-        onUploadProgress
+        onUploadProgress,
+        timeout: 60000 // 图片上传需要更长时间
     })
 }
 
-// 更新帖子（支持上传进度）
+// 更新帖子（支持上传进度，60秒超时）
 export function updatePost(data, onUploadProgress) {
     return request({
         url: '/mobile/forum/post',
         method: 'put',
         data,
-        onUploadProgress
+        onUploadProgress,
+        timeout: 60000 // 图片上传需要更长时间
     })
 }
 

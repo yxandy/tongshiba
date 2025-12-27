@@ -100,9 +100,9 @@ public class MobileFollowController extends BaseController {
             return getDataTable(Collections.emptyList());
         }
 
-        // 分页查询帖子详情 (已过滤已删除帖子)
+        // 分页查询帖子详情 (已过滤已删除帖子和限流帖子)
         startPage();
-        List<ForumPost> posts = forumPostMapper.selectFollowedPostList(postIds);
+        List<ForumPost> posts = forumPostMapper.selectFollowedPostList(postIds, user.getUserId());
         return getDataTable(posts);
     }
 }

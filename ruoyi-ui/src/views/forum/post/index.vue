@@ -90,6 +90,13 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
+      <el-table-column label="限流" prop="isRestricted" width="70" align="center">
+        <template slot-scope="scope">
+          <el-tag :type="scope.row.isRestricted === '1' ? 'danger' : 'success'" size="small">
+            {{ scope.row.isRestricted === '1' ? '已限流' : '正常' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="发布时间" prop="createTime" width="160" />
       <el-table-column label="操作" width="340" fixed="right">
         <template slot-scope="scope">
@@ -102,6 +109,8 @@
           <el-button size="mini" type="text" v-if="scope.row.isLocked === '1' && scope.row.delFlag !== '1'" @click="handleUnlock(scope.row)" v-hasPermi="['forum:post:lock']">解锁</el-button>
           <el-button size="mini" type="text" v-if="scope.row.delFlag !== '1'" style="color: #f56c6c" @click="handleDelete(scope.row)" v-hasPermi="['forum:post:remove']">删除</el-button>
           <el-button size="mini" type="text" v-if="scope.row.delFlag === '1'" style="color: #67c23a" @click="handleRestore(scope.row)" v-hasPermi="['forum:post:remove']">恢复</el-button>
+          <el-button size="mini" type="text" v-if="scope.row.isRestricted !== '1' && scope.row.delFlag !== '1'" style="color: #909399" @click="handleRestrict(scope.row)" v-hasPermi="['forum:post:lock']">限流</el-button>
+          <el-button size="mini" type="text" v-if="scope.row.isRestricted === '1' && scope.row.delFlag !== '1'" style="color: #67c23a" @click="handleUnrestrict(scope.row)" v-hasPermi="['forum:post:lock']">解除限流</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -254,7 +263,7 @@
 </template>
 
 <script>
-import { listPost, getPost, delPost, lockPost, unlockPost, restorePost, pinPost, unpinPost, getPostLog, getEditHistory } from '@/api/forum/post'
+import { listPost, getPost, delPost, lockPost, unlockPost, restorePost, pinPost, unpinPost, getPostLog, getEditHistory, restrictPost, unrestrictPost } from '@/api/forum/post'
 import { listCommentByPost, delComment, restoreComment, getCommentLog } from '@/api/forum/comment'
 import { listAllCategory } from '@/api/forum/category'
 
@@ -501,6 +510,22 @@ export default {
         this.$modal.msgSuccess('取消置顶成功')
       }).catch(() => {})
     },
+    handleRestrict(row) {
+      this.$modal.confirm('确定要限流帖子"' + row.title + '"吗？限流后仅作者可见。').then(() => {
+        return restrictPost(row.postId)
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess('限流成功')
+      }).catch(() => {})
+    },
+    handleUnrestrict(row) {
+      this.$modal.confirm('确定要解除帖子"' + row.title + '"的限流吗？').then(() => {
+        return unrestrictPost(row.postId)
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess('解除限流成功')
+      }).catch(() => {})
+    },
     handleViewLog(row) {
       this.logDialogVisible = true
       this.logLoading = true
@@ -519,7 +544,10 @@ export default {
         'pin': '置顶',
         'unpin': '取消置顶',
         'lock': '锁定',
-        'unlock': '解锁'
+        'unlock': '解锁',
+        'restrict': '限流',
+        'unrestrict': '解除限流',
+        'edit': '编辑'
       }
       return map[action] || action
     },

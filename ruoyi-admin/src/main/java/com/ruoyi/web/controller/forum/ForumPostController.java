@@ -152,4 +152,40 @@ public class ForumPostController extends BaseController {
         }
         return toAjax(result);
     }
+
+    /**
+     * 设置帖子限流（仅作者可见）
+     */
+    @PreAuthorize("@ss.hasPermi('forum:post:lock')")
+    @Log(title = "帖子管理", businessType = BusinessType.UPDATE)
+    @PutMapping("/restrict/{postId}")
+    public AjaxResult restrict(@PathVariable Long postId) {
+        ForumPost post = new ForumPost();
+        post.setPostId(postId);
+        post.setIsRestricted("1");
+        int result = forumPostService.updateForumPost(post);
+        if (result > 0) {
+            forumPostLogService.logAction(postId, "restrict", SecurityUtils.getUserId(), SecurityUtils.getUsername(),
+                    "帖子被设为限流");
+        }
+        return toAjax(result);
+    }
+
+    /**
+     * 解除帖子限流
+     */
+    @PreAuthorize("@ss.hasPermi('forum:post:lock')")
+    @Log(title = "帖子管理", businessType = BusinessType.UPDATE)
+    @PutMapping("/unrestrict/{postId}")
+    public AjaxResult unrestrict(@PathVariable Long postId) {
+        ForumPost post = new ForumPost();
+        post.setPostId(postId);
+        post.setIsRestricted("0");
+        int result = forumPostService.updateForumPost(post);
+        if (result > 0) {
+            forumPostLogService.logAction(postId, "unrestrict", SecurityUtils.getUserId(), SecurityUtils.getUsername(),
+                    "帖子解除限流");
+        }
+        return toAjax(result);
+    }
 }

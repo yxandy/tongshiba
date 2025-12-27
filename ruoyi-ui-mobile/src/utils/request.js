@@ -23,13 +23,19 @@ request.interceptors.response.use(
     response => {
         const res = response.data
         if (res.code !== 200) {
-            showToast(res.msg || '请求失败')
+            // 如果配置了 silentError，不显示 toast
+            if (!response.config.silentError) {
+                showToast(res.msg || '请求失败')
+            }
             return Promise.reject(new Error(res.msg || '请求失败'))
         }
         return res
     },
     error => {
-        showToast(error.message || '网络错误')
+        // 如果配置了 silentError，不显示 toast
+        if (!error.config?.silentError) {
+            showToast(error.message || '网络错误')
+        }
         return Promise.reject(error)
     }
 )

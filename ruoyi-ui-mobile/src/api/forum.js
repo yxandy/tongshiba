@@ -26,11 +26,13 @@ export function getPostList(params) {
     })
 }
 
-// 获取帖子详情
-export function getPostDetail(postId) {
+// 获取帖子详情（silentError: 限流帖子返回错误时不弹提示）
+export function getPostDetail(postId, wxUserid) {
     return request({
         url: `/mobile/forum/post/${postId}`,
-        method: 'get'
+        method: 'get',
+        params: wxUserid ? { wxUserid } : {},
+        silentError: true
     })
 }
 

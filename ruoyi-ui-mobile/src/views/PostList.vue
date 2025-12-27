@@ -206,9 +206,14 @@ async function loadMore() {
   
   loading.value = true
   try {
+    const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
     const params = { pageNum: pageNum.value, pageSize: pageSize.value }
     if (selectedCategoryId.value) {
       params.categoryId = selectedCategoryId.value
+    }
+    // 传入 wxUserid 用于限流过滤
+    if (user.wxUserid) {
+      params.wxUserid = user.wxUserid
     }
     const res = await getPostList(params)
     const rows = res.rows || []

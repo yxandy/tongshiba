@@ -89,3 +89,19 @@ export function getEditHistoryCount(postId) {
         method: 'get'
     })
 }
+
+// 设置帖子限流
+export function restrictPost(postId) {
+    return request({
+        url: '/forum/post/restrict/' + postId,
+        method: 'put'
+    })
+}
+
+// 解除帖子限流
+export function unrestrictPost(postId) {
+    return request({
+        url: '/forum/post/unrestrict/' + postId,
+        method: 'put'
+    })
+}

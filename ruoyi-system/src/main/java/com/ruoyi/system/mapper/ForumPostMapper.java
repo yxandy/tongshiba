@@ -57,7 +57,8 @@ public interface ForumPostMapper {
     /**
      * 查询用户关注的帖子列表
      */
-    public List<ForumPost> selectFollowedPostList(@org.apache.ibatis.annotations.Param("postIds") List<Long> postIds);
+    public List<ForumPost> selectFollowedPostList(@org.apache.ibatis.annotations.Param("postIds") List<Long> postIds,
+            @org.apache.ibatis.annotations.Param("currentUserId") Long currentUserId);
 
     /**
      * 更新帖子最后回复时间

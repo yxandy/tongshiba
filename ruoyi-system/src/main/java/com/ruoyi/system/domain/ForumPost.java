@@ -66,6 +66,12 @@ public class ForumPost extends BaseEntity {
     /** 置顶过期时间（NULL表示永久） */
     private java.util.Date pinExpireTime;
 
+    /** 是否限流（0正常 1限流） */
+    private String isRestricted;
+
+    /** 当前查询用户ID（非数据库字段，用于限流过滤） */
+    private Long currentUserId;
+
     /** 发帖用户信息（非数据库字段） */
     private ForumUser user;
 
@@ -211,6 +217,22 @@ public class ForumPost extends BaseEntity {
 
     public void setPinExpireTime(java.util.Date pinExpireTime) {
         this.pinExpireTime = pinExpireTime;
+    }
+
+    public String getIsRestricted() {
+        return isRestricted;
+    }
+
+    public void setIsRestricted(String isRestricted) {
+        this.isRestricted = isRestricted;
+    }
+
+    public Long getCurrentUserId() {
+        return currentUserId;
+    }
+
+    public void setCurrentUserId(Long currentUserId) {
+        this.currentUserId = currentUserId;
     }
 
     @Override

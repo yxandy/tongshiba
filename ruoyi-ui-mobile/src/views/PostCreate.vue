@@ -386,7 +386,8 @@ onMounted(async () => {
   // 编辑模式：加载帖子数据
   if (isEditMode.value && postId.value) {
     try {
-      const res = await getPostDetail(postId.value)
+      const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
+      const res = await getPostDetail(postId.value, user.wxUserid)
       const post = res.data
       title.value = post.title || ''
       content.value = post.content || ''

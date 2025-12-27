@@ -7,6 +7,9 @@
       <p>{{ accessDeniedMessage }}</p>
     </div>
 
+    <!-- 限流/不存在的帖子：显示纯空白页（无任何 UI） -->
+    <div v-else-if="!postLoading && !post" class="restricted-blank-page"></div>
+
     <!-- 正常内容 -->
     <template v-else>
       <!-- 顶部导航 -->
@@ -483,13 +486,22 @@ async function initUser() {
 // 加载帖子详情
 async function loadPost() {
   try {
-    const res = await getPostDetail(route.params.id)
+    const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
+    const res = await getPostDetail(route.params.id, user.wxUserid)
+    // 检查是否返回了错误（限流帖子非作者访问）
+    if (res.code !== 200) {
+      post.value = null
+      // 不显示任何提示，直接显示空白页
+      postLoading.value = false
+      return
+    }
     post.value = res.data
     // van-list 会在组件挂载时自动触发 load，不需要手动调用 loadComments
     // 检查关注状态
     loadFollowStatus()
   } catch (e) {
-    showToast('加载失败')
+    post.value = null
+    // 不显示任何提示
   } finally {
     postLoading.value = false
   }
@@ -1489,6 +1501,18 @@ function formatTime(timeStr) {
   }
   .post-detail-page .van-nav-bar__placeholder {
     background: #191919 !important;
+  }
+}
+
+/* 限流/不存在帖子的空白页 */
+.restricted-blank-page {
+  min-height: 100vh;
+  background: #f7f8fa;
+}
+
+@media (prefers-color-scheme: dark) {
+  .restricted-blank-page {
+    background: #000;
   }
 }
 </style>

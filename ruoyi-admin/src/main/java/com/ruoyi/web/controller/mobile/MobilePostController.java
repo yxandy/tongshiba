@@ -63,7 +63,14 @@ public class MobilePostController extends BaseController {
      * 获取帖子列表
      */
     @GetMapping("/list")
-    public TableDataInfo listPosts(ForumPost forumPost) {
+    public TableDataInfo listPosts(ForumPost forumPost, @RequestParam(required = false) String wxUserid) {
+        // 如果传入 wxUserid，则设置 currentUserId 用于限流过滤
+        if (wxUserid != null && !wxUserid.isEmpty()) {
+            ForumUser user = forumUserService.selectForumUserByWxUserid(wxUserid);
+            if (user != null) {
+                forumPost.setCurrentUserId(user.getUserId());
+            }
+        }
         startPage();
         List<ForumPost> list = forumPostService.selectForumPostList(forumPost);
         // 列表页不需要图片数据，用标识替代以减少传输量
@@ -79,10 +86,25 @@ public class MobilePostController extends BaseController {
      * 获取帖子详情
      */
     @GetMapping("/{postId}")
-    public AjaxResult getPostDetail(@PathVariable Long postId) {
+    public AjaxResult getPostDetail(@PathVariable Long postId, @RequestParam(required = false) String wxUserid) {
+        ForumPost post = forumPostService.selectForumPostById(postId);
+        if (post == null) {
+            return error("帖子不存在");
+        }
+
+        // 限流检查：如果帖子被限流，仅作者可见
+        if ("1".equals(post.getIsRestricted())) {
+            if (wxUserid == null || wxUserid.isEmpty()) {
+                return error("内容不存在");
+            }
+            ForumUser user = forumUserService.selectForumUserByWxUserid(wxUserid);
+            if (user == null || !user.getUserId().equals(post.getUserId())) {
+                return error("内容不存在");
+            }
+        }
+
         // 增加浏览次数
         forumPostService.incrementViewCount(postId);
-        ForumPost post = forumPostService.selectForumPostById(postId);
         return success(post);
     }
 

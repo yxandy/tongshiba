@@ -9,70 +9,77 @@
 
     <!-- 正常内容 -->
     <template v-else>
-      <!-- 顶部导航 -->
-      <van-nav-bar title="帖子列表" fixed placeholder class="nav-bar-dark">
-        <template #right>
-          <van-icon name="search" size="22" style="margin-right: 16px" @click="goToSearch" />
-          <van-popover 
-            v-model:show="showMenu" 
-            :actions="menuActions" 
-            @select="onMenuSelect"
-            placement="bottom-end"
-          >
-            <template #reference>
-              <van-icon name="ellipsis" size="22" />
-            </template>
-          </van-popover>
-        </template>
-      </van-nav-bar>
+      <!-- 顶部固定区域 -->
+      <div class="fixed-top-area">
+        <!-- 顶部导航 -->
+        <van-nav-bar title="帖子列表" class="nav-bar-dark">
+          <template #right>
+            <van-icon name="search" size="22" style="margin-right: 16px" @click="goToSearch" />
+            <van-popover 
+              v-model:show="showMenu" 
+              :actions="menuActions" 
+              @select="onMenuSelect"
+              placement="bottom-end"
+            >
+              <template #reference>
+                <van-icon name="ellipsis" size="22" />
+              </template>
+            </van-popover>
+          </template>
+        </van-nav-bar>
 
-      <!-- 分类筛选 -->
-      <div class="category-filter">
-        <div class="filter-scroll">
-          <span 
-            class="filter-tag" 
-            :class="{ active: selectedCategoryId === null }"
-            @click="selectedCategoryId = null"
-          >全部</span>
-          <span 
-            v-for="cat in categories" 
-            :key="cat.categoryId"
-            class="filter-tag"
-            :class="{ active: selectedCategoryId === cat.categoryId }"
-            @click="selectedCategoryId = cat.categoryId"
-          >{{ cat.name }}</span>
-        </div>
-      </div>
-
-      <!-- 骨架屏（首次加载时显示） -->
-      <div v-if="isFirstLoad" class="skeleton-container">
-        <div v-for="i in 4" :key="i" class="skeleton-card">
-          <van-skeleton title :row="2" />
-          <div class="skeleton-footer">
-            <van-skeleton-paragraph row-width="30%" />
+        <!-- 分类筛选 -->
+        <div class="category-filter">
+          <div class="filter-scroll">
+            <span 
+              class="filter-tag" 
+              :class="{ active: selectedCategoryId === null }"
+              @click="selectedCategoryId = null"
+            >全部</span>
+            <span 
+              v-for="cat in categories" 
+              :key="cat.categoryId"
+              class="filter-tag"
+              :class="{ active: selectedCategoryId === cat.categoryId }"
+              @click="selectedCategoryId = cat.categoryId"
+            >{{ cat.name }}</span>
           </div>
         </div>
       </div>
 
-      <!-- 下拉刷新 + 帖子列表 -->
-      <van-pull-refresh v-else v-model="refreshing" @refresh="onRefresh">
-        <van-list
-          v-model:loading="loading"
-          :finished="finished"
-          finished-text="没有更多了"
-          @load="loadMore"
-        >
-          <!-- 帖子列表项 -->
-          <PostItem
-            v-for="post in postList"
-            :key="post.postId"
-            :post="post"
-            @click="goToDetail(post.postId)"
-          />
-        </van-list>
-      </van-pull-refresh>
+      <!-- 中间滚动区域 -->
+      <div class="scroll-content" ref="scrollContainer" @scroll="handleScroll">
+        <!-- 骨架屏（首次加载时显示） -->
+        <div v-if="isFirstLoad" class="skeleton-container">
+          <div v-for="i in 4" :key="i" class="skeleton-card">
+            <van-skeleton title :row="2" />
+            <div class="skeleton-footer">
+              <van-skeleton-paragraph row-width="30%" />
+            </div>
+          </div>
+        </div>
 
-      <!-- 发帖按钮 -->
+        <!-- 下拉刷新 + 帖子列表 -->
+        <van-pull-refresh v-else v-model="refreshing" @refresh="onRefresh">
+          <van-list
+            v-model:loading="loading"
+            :finished="finished"
+            finished-text="没有更多了"
+            :offset="300"
+            @load="loadMore"
+          >
+            <!-- 帖子列表项 -->
+            <PostItem
+              v-for="post in postList"
+              :key="post.postId"
+              :post="post"
+              @click="goToDetail(post.postId)"
+            />
+          </van-list>
+        </van-pull-refresh>
+      </div>
+
+      <!-- 底部发帖按钮 (普通流布局) -->
       <div class="create-btn" @click="goToCreate">
         <span class="create-text">
           <van-icon name="edit" style="margin-right: 6px;" />
@@ -84,7 +91,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onActivated, watch } from 'vue'
+import { ref, onMounted, onActivated, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { getPostList, syncUser, getCategoryList } from '@/api/forum'
 import { isWxWorkEnv, getAccessDeniedMessage, getMockUser, loginWithWxWork } from '@/utils/wxwork'
@@ -102,8 +109,11 @@ const isFirstLoad = ref(true)
 const finished = ref(false)
 const refreshing = ref(false)
 const pageNum = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(20)
 const debugInfo = ref('')  // 调试信息
+
+// 滚动容器引用
+const scrollContainer = ref(null)
 
 // 菜单
 const showMenu = ref(false)
@@ -122,6 +132,10 @@ watch(selectedCategoryId, () => {
   finished.value = false
   loading.value = false
   postList.value = []
+  // 滚动到顶部
+  if (scrollContainer.value) {
+    scrollContainer.value.scrollTop = 0
+  }
   loadMore()
 })
 
@@ -158,6 +172,11 @@ onMounted(async () => {
 
 // 从其他页面返回时刷新列表（keep-alive 激活）
 onActivated(() => {
+  // 滚动到顶部
+  if (scrollContainer.value) {
+    scrollContainer.value.scrollTop = 0
+  }
+  
   // 重置为第一页并刷新
   postList.value = []
   pageNum.value = 1
@@ -256,6 +275,11 @@ function onRefresh() {
   loadMore()
 }
 
+// 处理滚动事件 (如果需要实现滚动加载，可以结合 van-list 的 @load)
+function handleScroll() {
+  // 可以在这里添加自定义的滚动逻辑，例如滚动到某个位置时触发特定行为
+}
+
 // 跳转详情
 function goToDetail(postId) {
   router.push(`/post/${postId}`)
@@ -275,23 +299,29 @@ function goToSearch() {
 <style scoped>
 /* 骨架屏样式 */
 .skeleton-container {
-  padding: 0 16px;
+  padding: 12px;
 }
 
 .skeleton-card {
-  padding: 16px;
   background: #fff;
-  border-radius: 8px;
-  margin-bottom: 12px;
+  padding: 16px;
+  margin-bottom: 10px;
+  border-radius: 4px;
 }
 
 .skeleton-footer {
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 @media (prefers-color-scheme: dark) {
   .skeleton-card {
-    background: #1a1a1a;
+    background: #191919 !important;
+  }
+  :deep(.van-skeleton), :deep(.van-skeleton__content) {
+    background: transparent !important;
+  }
+  :deep(.van-skeleton__row), :deep(.van-skeleton__title) {
+    background: #333 !important;
   }
 }
 
@@ -335,12 +365,18 @@ function goToSearch() {
 }
 
 .post-list-page {
-  min-height: 100vh;
-  background: #f5f5f5;
-  padding-top: 46px; /* 分类筛选栏高度 */
-  padding-bottom: 85px; /* 配合更高的发帖按钮 */
+  /* 关键：使用 Flex 布局撑满全屏 */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f7f8fa;
+  overflow: hidden; /* 防止页面整体滚动 */
 }
 
+/* 底部垫片 - 确保"没有更多了"不被按钮遮挡 */
+:deep(.van-list__finished-text) {
+  padding-bottom: 80px;
+}
 @media (prefers-color-scheme: dark) {
   .post-list-page {
     background: #000;
@@ -356,23 +392,38 @@ function goToSearch() {
   color: var(--text-secondary);
 }
 
+/* 顶部固定区域 */
+.fixed-top-area {
+  flex-shrink: 0;
+  z-index: 10;
+  background: #fff;
+}
+
+/* 中间滚动区域 */
+.scroll-content {
+  flex: 1; /* 占据剩余空间 */
+  overflow-y: auto; /* 允许内部滚动 */
+  -webkit-overflow-scrolling: touch; /* iOS顺滑滚动 */
+}
+
+/* 下拉刷新组件高度修正 */
+:deep(.van-pull-refresh) {
+  min-height: 100%;
+}
+
 /* 分类筛选栏 */
 .category-filter {
-  position: fixed;
-  top: 46px; /* 导航栏高度 */
-  left: 0;
-  right: 0;
-  z-index: 99;
+  padding: 8px 16px;
   background: #fff;
-  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+  overflow-x: auto;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .filter-scroll {
-  display: flex;
-  overflow-x: auto;
-  padding: 10px 16px;
-  gap: 12px;
-  -webkit-overflow-scrolling: touch;
+  display: inline-block;
+  padding: 0; /* 移除原有的 padding */
+  gap: 8px; /* 调整间距 */
 }
 
 .filter-scroll::-webkit-scrollbar {
@@ -380,13 +431,15 @@ function goToSearch() {
 }
 
 .filter-tag {
+  display: inline-block;
   flex-shrink: 0;
-  padding: 5px 14px;
-  font-size: 14px;
+  padding: 4px 12px;
+  font-size: 13px;
   color: #666;
   background: #f5f5f5;
   border-radius: 14px;
   white-space: nowrap;
+  margin-right: 8px; /* 添加右侧间距 */
 }
 
 .filter-tag.active {

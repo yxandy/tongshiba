@@ -434,11 +434,11 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  // 恢复 body 滚动
-  document.body.style.overflow = ''
-  document.body.style.height = ''
-  document.documentElement.style.overflow = ''
-  document.documentElement.style.height = ''
+  // 恢复 html/body 滚动，使用 removeProperty 彻底清除
+  document.body.style.removeProperty('overflow')
+  document.body.style.removeProperty('height')
+  document.documentElement.style.removeProperty('overflow')
+  document.documentElement.style.removeProperty('height')
   
   if (window.visualViewport) {
     window.visualViewport.removeEventListener('resize', handleViewportResize)

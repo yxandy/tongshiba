@@ -449,13 +449,16 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  // 恢复 body 样式
-  document.body.style.overflow = ''
-  document.body.style.height = ''
-  document.body.style.width = ''
-  document.documentElement.style.overflow = ''
-  document.documentElement.style.height = ''
-  document.documentElement.style.width = ''
+  // 恢复 html/body 样式，使用 removeProperty 彻底清除
+  document.body.style.removeProperty('overflow')
+  document.body.style.removeProperty('height')
+  document.body.style.removeProperty('width')
+  document.documentElement.style.removeProperty('overflow')
+  document.documentElement.style.removeProperty('height')
+  document.documentElement.style.removeProperty('width')
+  
+  // 滚动到顶部以重置视口
+  window.scrollTo(0, 0)
   
   // 移除 visualViewport 事件监听
   if (window.visualViewport) {

@@ -84,7 +84,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onActivated, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getPostList, syncUser, getCategoryList } from '@/api/forum'
 import { isWxWorkEnv, getAccessDeniedMessage, getMockUser, loginWithWxWork } from '@/utils/wxwork'
@@ -154,6 +154,15 @@ onMounted(async () => {
     // 手动加载数据（因为骨架屏显示时 van-list 未渲染，无法自动触发 @load）
     loadMore()
   }
+})
+
+// 从其他页面返回时刷新列表（keep-alive 激活）
+onActivated(() => {
+  // 重置为第一页并刷新
+  postList.value = []
+  pageNum.value = 1
+  finished.value = false
+  loadMore()
 })
 
 // 初始化用户

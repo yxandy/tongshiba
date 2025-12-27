@@ -296,6 +296,11 @@ function loadDraft() {
 
 // 清除草稿
 function clearDraft() {
+  // 同时取消待执行的保存操作
+  if (saveDraftTimer) {
+    clearTimeout(saveDraftTimer)
+    saveDraftTimer = null
+  }
   localStorage.removeItem(DRAFT_KEY)
 }
 

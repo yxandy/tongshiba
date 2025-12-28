@@ -1,5 +1,5 @@
 <template>
-  <div class="post-item" @click="$emit('click')">
+  <div class="post-item" :class="{ 'is-new-post': isNew }" @click="$emit('click')">
     <!-- 标题 -->
     <div class="post-title">
       <span v-if="isPinned" class="pin-tag">【置顶】</span>
@@ -38,6 +38,10 @@ const props = defineProps({
   post: {
     type: Object,
     required: true
+  },
+  isNew: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -73,10 +77,24 @@ const showVideoIcon = computed(() => {
 
 <style scoped>
 .post-item {
+  position: relative;
   background: #fff;
   padding: 16px 16px 12px 16px;
   margin-bottom: 10px;
   border-bottom: none;
+}
+
+/* 新帖蓝条标记 */
+.post-item.is-new-post::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  background: #1989fa;
+  border-radius: 0 2px 2px 0;
+  z-index: 1;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -73,6 +73,7 @@
               v-for="post in postList"
               :key="post.postId"
               :post="post"
+              :is-new="isNewPost(post)"
               @click="goToDetail(post.postId)"
             />
           </van-list>
@@ -259,6 +260,17 @@ async function loadMore() {
     } else {
       pageNum.value++
     }
+    
+    // 更新新帖基准ID到 localStorage（渲染完成后再更新，确保蓝条能显示）
+    if (postList.value.length > 0) {
+      const currentMaxId = Math.max(...postList.value.map(p => p.postId))
+      // 使用 nextTick 确保渲染完成后再更新
+      nextTick(() => {
+        if (currentMaxId > (parseInt(localStorage.getItem('forum_last_read_max_id')) || 0)) {
+          localStorage.setItem('forum_last_read_max_id', currentMaxId.toString())
+        }
+      })
+    }
   } catch (e) {
     console.error('加载帖子失败', e)
   } finally {
@@ -273,6 +285,15 @@ function onRefresh() {
   pageNum.value = 1
   finished.value = false
   loadMore()
+}
+
+// 判断是否为新帖（用于蓝条标记，纯 localStorage 方案）
+function isNewPost(post) {
+  const lastReadMaxId = parseInt(localStorage.getItem('forum_last_read_max_id') || '0')
+  // 首次访问不显示蓝条
+  if (lastReadMaxId === 0) return false
+  // 比基准大的就是新帖
+  return post.postId > lastReadMaxId
 }
 
 // 处理滚动事件 (如果需要实现滚动加载，可以结合 van-list 的 @load)

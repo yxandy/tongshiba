@@ -3,6 +3,10 @@ package com.ruoyi.web.controller.mobile;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.ruoyi.common.config.RuoYiConfig;
+import com.ruoyi.common.utils.file.FileUploadUtils;
+import com.ruoyi.framework.config.ServerConfig;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
@@ -31,6 +35,9 @@ public class MobilePostController extends BaseController {
 
     @Autowired
     private IForumPostService forumPostService;
+
+    @Autowired
+    private ServerConfig serverConfig;
 
     @Autowired
     private IForumUserService forumUserService;
@@ -230,5 +237,34 @@ public class MobilePostController extends BaseController {
             forumPostLogService.logAction(request.getPostId(), "delete", null, user.getNickname(), "帖子被删除");
         }
         return toAjax(result);
+    }
+
+    /**
+     * 上传图片（移动端专用）
+     */
+    @PostMapping("/upload/image")
+    public AjaxResult uploadImage(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                return error("上传文件不能为空");
+            }
+            // 检查文件类型
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                return error("只能上传图片文件");
+            }
+            // 上传文件路径
+            String filePath = RuoYiConfig.getUploadPath();
+            // 上传并返回新文件名称
+            String fileName = FileUploadUtils.upload(filePath, file);
+            // 返回可通过前端代理访问的 URL
+            // 前端 /tongshiba-api 代理到后端 /tongshiba，后端静态资源路径是 /profile
+            String accessUrl = "/tongshiba-api" + fileName;
+            AjaxResult ajax = AjaxResult.success("上传成功");
+            ajax.put("url", accessUrl);
+            return ajax;
+        } catch (Exception e) {
+            return error("上传失败: " + e.getMessage());
+        }
     }
 }

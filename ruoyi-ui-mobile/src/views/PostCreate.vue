@@ -202,7 +202,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast, showDialog } from 'vant'
-import { createPost, updatePost, getPostDetail, syncUser, getCategoryList } from '@/api/forum'
+import { createPost, updatePost, getPostDetail, syncUser, getCategoryList, uploadImage } from '@/api/forum'
 import { isWxWorkEnv, getMockUser } from '@/utils/wxwork'
 import { emojiList, emojiBasePath, getRecentEmojis, addRecentEmoji } from '@/config/emojis'
 
@@ -620,7 +620,7 @@ function compressImage(file, maxWidth = 800, quality = 0.5) {
   })
 }
 
-// 处理图片选择（带压缩）
+// 处理图片选择（压缩后上传到服务器）
 async function handleImageSelect(event) {
   const files = event.target.files
   if (!files || files.length === 0) return
@@ -636,7 +636,7 @@ async function handleImageSelect(event) {
     showToast('已忽略非图片文件')
   }
 
-  // 限制单次上传数量，避免界面卡顿
+  // 限制单次上传数量
   const MAX_SINGLE_UPLOAD = 20
   if (imageFiles.length > MAX_SINGLE_UPLOAD) {
     showToast(`单次最多选择${MAX_SINGLE_UPLOAD}张图片`)
@@ -647,23 +647,66 @@ async function handleImageSelect(event) {
   // 压缩阈值：500KB
   const COMPRESS_THRESHOLD = 500 * 1024
 
+  // 逐张处理并上传
   for (const file of imageFiles) {
-    if (file.size > COMPRESS_THRESHOLD) {
+    try {
+      let fileToUpload = file
+      
       // 大于 500KB 的图片进行压缩
-      const compressedDataUrl = await compressImage(file)
-      imageList.value.push(compressedDataUrl)
-    } else {
-      // 小于 500KB 的图片直接使用
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        imageList.value.push(e.target.result)
+      if (file.size > COMPRESS_THRESHOLD) {
+        fileToUpload = await compressImageToBlob(file)
       }
-      reader.readAsDataURL(file)
+      
+      // 上传到服务器
+      const res = await uploadImage(fileToUpload)
+      if (res.code === 200 && res.url) {
+        // 存储服务器返回的 URL
+        imageList.value.push(res.url)
+      } else {
+        showToast('图片上传失败')
+      }
+    } catch (e) {
+      console.error('图片上传失败', e)
+      showToast('图片上传失败: ' + (e.message || '未知错误'))
     }
   }
 
   // 清空input，允许重复选择同一文件
   event.target.value = ''
+}
+
+// 压缩图片并返回 Blob（用于上传）
+function compressImageToBlob(file, maxWidth = 800, quality = 0.5) {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        let width = img.width
+        let height = img.height
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+        
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        // 转换为 Blob
+        canvas.toBlob((blob) => {
+          // 创建一个新的 File 对象，保持原文件名
+          const compressedFile = new File([blob], file.name, { type: 'image/jpeg' })
+          resolve(compressedFile)
+        }, 'image/jpeg', quality)
+      }
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  })
 }
 
 // 移除图片
@@ -711,14 +754,6 @@ async function submitPost() {
   }
 
   submitting.value = true
-  uploadProgress.value = 0
-  
-  // 上传进度回调
-  const onUploadProgress = (progressEvent) => {
-    if (progressEvent.total) {
-      uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-    }
-  }
   
   try {
     if (isEditMode.value) {
@@ -731,11 +766,11 @@ async function submitPost() {
         images: imageList.value.length > 0 ? JSON.stringify(imageList.value) : '',
         videoUrl: videoUrl.value || '',
         categoryId: selectedCategory.value
-      }, onUploadProgress)
+      })
       showToast('修改成功')
       clearDraft() // 修改成功后也清除草稿
     } else {
-      // 新建模式：调用创建接口
+      // 新建模式：调用创建接口（图片已提前上传，这里只传 URL）
       await createPost({
         wxUserid: user.wxUserid,
         title: title.value.trim(),
@@ -745,7 +780,7 @@ async function submitPost() {
         userUnit: user.unit || '',
         userDept: user.department || '',
         categoryId: selectedCategory.value
-      }, onUploadProgress)
+      })
       showToast('发布成功')
       clearDraft() // 发布成功后清除草稿
     }

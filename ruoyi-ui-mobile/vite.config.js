@@ -21,6 +21,11 @@ export default defineConfig({
         changeOrigin: true,
         // 将 /tongshiba-api 替换为 /tongshiba（后端的 context-path）
         rewrite: (path) => path.replace(/^\/tongshiba-api/, '/tongshiba')
+      },
+      // 静态资源代理（上传的图片等）
+      '/profile': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   }

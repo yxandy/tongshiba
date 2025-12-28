@@ -44,25 +44,35 @@ export function getCategoryList() {
     })
 }
 
-// 发布帖子（支持上传进度，60秒超时）
-export function createPost(data, onUploadProgress) {
+// 发布帖子（图片已提前上传，无需长超时）
+export function createPost(data) {
     return request({
         url: '/mobile/forum/post',
         method: 'post',
-        data,
-        onUploadProgress,
-        timeout: 60000 // 图片上传需要更长时间
+        data
     })
 }
 
-// 更新帖子（支持上传进度，60秒超时）
-export function updatePost(data, onUploadProgress) {
+// 更新帖子
+export function updatePost(data) {
     return request({
         url: '/mobile/forum/post',
         method: 'put',
-        data,
-        onUploadProgress,
-        timeout: 60000 // 图片上传需要更长时间
+        data
+    })
+}
+
+// 上传图片（移动端专用，无需认证）
+export function uploadImage(file, onProgress) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request({
+        url: '/mobile/forum/post/upload/image',
+        method: 'post',
+        data: formData,
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: onProgress,
+        timeout: 60000
     })
 }
 

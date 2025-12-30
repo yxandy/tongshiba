@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ForumStatisticsMapper">
+
+    <resultMap type="com.ruoyi.system.domain.vo.ForumStatsVO" id="ForumStatsVOResult">
+        <result property="unitName" column="unit_name"/>
+        <result property="deptName" column="dept_name"/>
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="postCount" column="post_count"/>
+        <result property="pinCount" column="pin_count"/>
+    </resultMap>
+
+    <!-- 通用条件片段：排除锁定、限流、删除的帖子 -->
+    <sql id="baseCondition">
+        del_flag = '0' AND is_locked = '0' AND is_restricted = '0'
+    </sql>
+
+    <!-- 按单位统计 -->
+    <select id="selectUnitStats" parameterType="com.ruoyi.system.domain.vo.ForumStatsQuery" resultMap="ForumStatsVOResult">
+        SELECT 
+            user_unit AS unit_name,
+            COUNT(*) AS post_count,
+            SUM(CASE WHEN is_pinned = '1' THEN 1 ELSE 0 END) AS pin_count
+        FROM forum_post
+        WHERE <include refid="baseCondition"/>
+        <if test="startDate != null">
+            AND create_time &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND create_time &lt;= #{endDate}
+        </if>
+        <if test="unitName != null and unitName != ''">
+            AND user_unit = #{unitName}
+        </if>
+        GROUP BY user_unit
+        ORDER BY post_count DESC
+    </select>
+
+    <!-- 按部门统计（需要指定单位） -->
+    <select id="selectDeptStats" parameterType="com.ruoyi.system.domain.vo.ForumStatsQuery" resultMap="ForumStatsVOResult">
+        SELECT 
+            user_dept AS dept_name,
+            COUNT(*) AS post_count,
+            SUM(CASE WHEN is_pinned = '1' THEN 1 ELSE 0 END) AS pin_count
+        FROM forum_post
+        WHERE <include refid="baseCondition"/>
+        <if test="unitName != null and unitName != ''">
+            AND user_unit = #{unitName}
+        </if>
+        <if test="startDate != null">
+            AND create_time &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND create_time &lt;= #{endDate}
+        </if>
+        GROUP BY user_dept
+        ORDER BY post_count DESC
+    </select>
+
+    <!-- 按用户统计（需要指定单位） -->
+    <select id="selectUserStats" parameterType="com.ruoyi.system.domain.vo.ForumStatsQuery" resultMap="ForumStatsVOResult">
+        SELECT 
+            p.user_id AS user_id,
+            u.nickname AS user_name,
+            COUNT(*) AS post_count,
+            SUM(CASE WHEN p.is_pinned = '1' THEN 1 ELSE 0 END) AS pin_count
+        FROM forum_post p
+        LEFT JOIN forum_user u ON p.user_id = u.user_id
+        WHERE p.del_flag = '0' AND p.is_locked = '0' AND p.is_restricted = '0'
+        <if test="unitName != null and unitName != ''">
+            AND p.user_unit = #{unitName}
+        </if>
+        <if test="startDate != null">
+            AND p.create_time &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND p.create_time &lt;= #{endDate}
+        </if>
+        GROUP BY p.user_id, u.nickname
+        ORDER BY post_count DESC
+    </select>
+
+</mapper>

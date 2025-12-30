@@ -14,10 +14,12 @@
         <result property="createTime" column="create_time" />
         <result property="updateTime" column="update_time" />
         <result property="isAdmin" column="is_admin" />
+        <result property="role" column="role" />
+        <result property="isRateLimited" column="is_rate_limited" />
     </resultMap>
 
     <sql id="selectForumUserVo">
-        select user_id, wx_userid, nickname, avatar, department, unit, status, ban_end_time, is_admin, create_time, update_time
+        select user_id, wx_userid, nickname, avatar, department, unit, status, ban_end_time, is_admin, role, is_rate_limited, create_time, update_time
         from forum_user
     </sql>
 
@@ -29,6 +31,11 @@
     <select id="selectForumUserByWxUserid" parameterType="String" resultMap="ForumUserResult">
         <include refid="selectForumUserVo"/>
         where wx_userid = #{wxUserid}
+    </select>
+
+    <select id="selectForumUserByNickname" parameterType="String" resultMap="ForumUserResult">
+        <include refid="selectForumUserVo"/>
+        where nickname = #{nickname}
     </select>
 
     <select id="selectForumUserList" parameterType="com.ruoyi.system.domain.ForumUser" resultMap="ForumUserResult">
@@ -60,6 +67,8 @@
             <if test="unit != null">unit,</if>
             <if test="status != null">status,</if>
             <if test="banEndTime != null">ban_end_time,</if>
+            <if test="role != null">role,</if>
+            <if test="isRateLimited != null">is_rate_limited,</if>
             create_time
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -70,6 +79,8 @@
             <if test="unit != null">#{unit},</if>
             <if test="status != null">#{status},</if>
             <if test="banEndTime != null">#{banEndTime},</if>
+            <if test="role != null">#{role},</if>
+            <if test="isRateLimited != null">#{isRateLimited},</if>
             sysdate()
         </trim>
     </insert>
@@ -84,6 +95,8 @@
             <if test="unit != null">unit = #{unit},</if>
             <if test="status != null">status = #{status},</if>
             <if test="banEndTime != null">ban_end_time = #{banEndTime},</if>
+            <if test="role != null">role = #{role},</if>
+            <if test="isRateLimited != null">is_rate_limited = #{isRateLimited},</if>
             update_time = sysdate()
         </trim>
         where user_id = #{userId}

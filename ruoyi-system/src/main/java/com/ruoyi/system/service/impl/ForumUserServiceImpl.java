@@ -25,6 +25,12 @@ public class ForumUserServiceImpl implements IForumUserService {
     @Autowired
     private ForumUserBanMapper forumUserBanMapper;
 
+    @Autowired
+    private com.ruoyi.system.service.IForumUnitService forumUnitService;
+
+    @Autowired
+    private com.ruoyi.system.service.IForumDepartmentService forumDepartmentService;
+
     @Override
     public ForumUser selectForumUserById(Long userId) {
         return forumUserMapper.selectForumUserById(userId);
@@ -33,6 +39,11 @@ public class ForumUserServiceImpl implements IForumUserService {
     @Override
     public ForumUser selectForumUserByWxUserid(String wxUserid) {
         return forumUserMapper.selectForumUserByWxUserid(wxUserid);
+    }
+
+    @Override
+    public ForumUser selectForumUserByNickname(String nickname) {
+        return forumUserMapper.selectForumUserByNickname(nickname);
     }
 
     @Override
@@ -53,9 +64,24 @@ public class ForumUserServiceImpl implements IForumUserService {
     @Override
     @Transactional
     public ForumUser syncWxUser(String wxUserid, String nickname, String avatar, String unit, String department) {
+        // 1. 同步单位表
+        if (unit != null && !unit.isEmpty()) {
+            forumUnitService.syncUnit(unit);
+        }
+
+        // 2. 同步部门表
+        if (unit != null && !unit.isEmpty() && department != null && !department.isEmpty()) {
+            // 先查询单位ID
+            com.ruoyi.system.domain.ForumUnit forumUnit = forumUnitService.selectForumUnitByName(unit);
+            if (forumUnit != null) {
+                forumDepartmentService.syncDepartment(forumUnit.getUnitId(), department);
+            }
+        }
+
+        // 3. 同步用户表
         ForumUser existingUser = forumUserMapper.selectForumUserByWxUserid(wxUserid);
         if (existingUser != null) {
-            // 更新用户信息
+            // 更新用户信息（包括单位和部门）
             existingUser.setNickname(nickname);
             existingUser.setAvatar(avatar);
             existingUser.setUnit(unit);
@@ -71,6 +97,8 @@ public class ForumUserServiceImpl implements IForumUserService {
             newUser.setUnit(unit);
             newUser.setDepartment(department);
             newUser.setStatus("0");
+            newUser.setRole("user"); // 默认角色为普通用户
+            newUser.setIsRateLimited("0"); // 默认不限流
             forumUserMapper.insertForumUser(newUser);
             return newUser;
         }

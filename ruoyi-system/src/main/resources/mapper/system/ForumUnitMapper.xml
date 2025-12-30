@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ForumUnitMapper">
+    
+    <resultMap type="ForumUnit" id="ForumUnitResult">
+        <id     property="unitId"       column="unit_id"/>
+        <result property="unitName"     column="unit_name"/>
+        <result property="displayName"  column="display_name"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateTime"   column="update_time"/>
+    </resultMap>
+
+    <sql id="selectForumUnitVo">
+        select unit_id, unit_name, display_name, create_time, update_time
+        from forum_unit
+    </sql>
+
+    <select id="selectForumUnitList" parameterType="ForumUnit" resultMap="ForumUnitResult">
+        <include refid="selectForumUnitVo"/>
+        <where>
+            <if test="unitName != null and unitName != ''">
+                AND unit_name like concat('%', #{unitName}, '%')
+            </if>
+            <if test="displayName != null and displayName != ''">
+                AND display_name like concat('%', #{displayName}, '%')
+            </if>
+        </where>
+        order by unit_id asc
+    </select>
+
+    <select id="selectForumUnitById" parameterType="Long" resultMap="ForumUnitResult">
+        <include refid="selectForumUnitVo"/>
+        where unit_id = #{unitId}
+    </select>
+
+    <select id="selectForumUnitByName" parameterType="String" resultMap="ForumUnitResult">
+        <include refid="selectForumUnitVo"/>
+        where unit_name = #{unitName}
+    </select>
+
+    <insert id="insertForumUnit" parameterType="ForumUnit" useGeneratedKeys="true" keyProperty="unitId">
+        insert into forum_unit (
+            unit_name,
+            display_name,
+            create_time
+        ) values (
+            #{unitName},
+            #{displayName},
+            sysdate()
+        )
+    </insert>
+
+    <update id="updateForumUnit" parameterType="ForumUnit">
+        update forum_unit
+        <set>
+            <if test="unitName != null and unitName != ''">unit_name = #{unitName},</if>
+            <if test="displayName != null and displayName != ''">display_name = #{displayName},</if>
+            update_time = sysdate()
+        </set>
+        where unit_id = #{unitId}
+    </update>
+
+    <delete id="deleteForumUnitById" parameterType="Long">
+        delete from forum_unit where unit_id = #{unitId}
+    </delete>
+</mapper>

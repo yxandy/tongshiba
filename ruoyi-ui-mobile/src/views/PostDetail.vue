@@ -286,6 +286,7 @@ const isInputExpanded = computed(() => {
   return isFocused.value || showEmojiPicker.value || commentText.value.length > 0
 })
 
+
 function handleBlur() {
   // 延迟失焦，防止点击发送按钮时立即收起
   setTimeout(() => {
@@ -337,15 +338,30 @@ const isAuthor = computed(() => {
   return post.value.userId === user.userId
 })
 
-// 计算是否是管理员
+// 计算是否是管理员（admin 或旧的 isAdmin 字段）
 const isAdmin = computed(() => {
   const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
-  return user.isAdmin === '1'
+  return user.role === 'admin' || user.isAdmin === '1'
 })
 
-// 计算是否可以删除（作者或管理员）
+// 计算是否是分级管理员
+const isSubAdmin = computed(() => {
+  const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
+  return user.role === 'sub_admin'
+})
+
+// 计算是否可以删除（作者、管理员、分级管理员可删本单位帖子）
 const canDelete = computed(() => {
-  return isAuthor.value || isAdmin.value
+  if (isAuthor.value) return true
+  if (isAdmin.value) return true
+  
+  // 分级管理员只能删除本单位帖子
+  if (isSubAdmin.value && post.value) {
+    const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
+    return user.unit && user.unit === post.value.userUnit
+  }
+  
+  return false
 })
 
 // 10分钟编辑时间窗口（毫秒）
@@ -837,12 +853,24 @@ function handleOpenUserProfile(wxUserid) {
   openUserProfile(wxUserid)
 }
 
-// 判断当前用户是否可以删除该评论（仅评论作者可删）
+// 判断当前用户是否可以删除该评论（评论作者、管理员、分级管理员可删）
 function canDeleteComment(comment) {
   const user = JSON.parse(localStorage.getItem('forumUser') || '{}')
   if (!user.wxUserid) return false
+  
   // 评论作者可以删除自己的评论
-  return comment.user?.wxUserid === user.wxUserid
+  const isAuthor = comment.user?.wxUserid === user.wxUserid
+  if (isAuthor) return true
+  
+  // 管理员可以删除任意评论
+  if (user.role === 'admin') return true
+  
+  // 分级管理员可以删除本单位评论
+  if (user.role === 'sub_admin') {
+    return user.unit && user.unit === comment.userUnit
+  }
+  
+  return false
 }
 
 // 确认删除评论

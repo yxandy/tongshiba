@@ -38,6 +38,23 @@ public class ForumCommentServiceImpl implements IForumCommentService {
     }
 
     @Override
+    public List<ForumComment> selectForumCommentByPostIdWithFilter(Long postId, Long currentUserId) {
+        List<ForumComment> allComments = forumCommentMapper.selectForumCommentByPostId(postId);
+
+        // 如果没有传入当前用户ID，过滤掉所有限流评论
+        if (currentUserId == null) {
+            allComments.removeIf(comment -> "1".equals(comment.getIsRateLimited()));
+            return allComments;
+        }
+
+        // 过滤限流评论：只保留非限流的，或者是当前用户自己发的
+        allComments.removeIf(
+                comment -> "1".equals(comment.getIsRateLimited()) && !currentUserId.equals(comment.getUserId()));
+
+        return allComments;
+    }
+
+    @Override
     @Transactional
     public int insertForumComment(ForumComment forumComment) {
         // 获取当前最大楼层号

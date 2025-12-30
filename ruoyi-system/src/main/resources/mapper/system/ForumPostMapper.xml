@@ -137,6 +137,7 @@
             <if test="content != null">content,</if>
             <if test="images != null">images,</if>
             <if test="videoUrl != null and videoUrl != ''">video_url,</if>
+            <if test="isRestricted != null">is_restricted,</if>
             view_count,
             comment_count,
             is_locked,
@@ -152,6 +153,7 @@
             <if test="content != null">#{content},</if>
             <if test="images != null">#{images},</if>
             <if test="videoUrl != null and videoUrl != ''">#{videoUrl},</if>
+            <if test="isRestricted != null">#{isRestricted},</if>
             0,
             0,
             '0',

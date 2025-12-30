@@ -20,6 +20,11 @@ public interface IForumUserService {
     public ForumUser selectForumUserByWxUserid(String wxUserid);
 
     /**
+     * 根据昵称查询用户（用于后台管理员查询自己的论坛角色）
+     */
+    public ForumUser selectForumUserByNickname(String nickname);
+
+    /**
      * 查询论坛用户列表
      */
     public List<ForumUser> selectForumUserList(ForumUser forumUser);

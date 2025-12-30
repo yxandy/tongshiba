@@ -25,6 +25,15 @@ public interface IForumCommentService {
     public List<ForumComment> selectForumCommentByPostId(Long postId);
 
     /**
+     * 根据帖子ID查询评论列表（支持限流过滤）
+     * 
+     * @param postId        帖子ID
+     * @param currentUserId 当前用户ID（用于过滤限流评论）
+     * @return 评论列表
+     */
+    public List<ForumComment> selectForumCommentByPostIdWithFilter(Long postId, Long currentUserId);
+
+    /**
      * 新增评论
      */
     public int insertForumComment(ForumComment forumComment);

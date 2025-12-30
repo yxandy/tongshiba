@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ForumDepartmentMapper">
+    
+    <resultMap type="ForumDepartment" id="ForumDepartmentResult">
+        <id     property="deptId"       column="dept_id"/>
+        <result property="unitId"       column="unit_id"/>
+        <result property="deptName"     column="dept_name"/>
+        <result property="unitName"     column="unit_name"/>
+        <result property="createTime"   column="create_time"/>
+        <result property="updateTime"   column="update_time"/>
+    </resultMap>
+
+    <sql id="selectForumDepartmentVo">
+        select d.dept_id, d.unit_id, d.dept_name, d.create_time, d.update_time,
+               u.unit_name
+        from forum_department d
+        left join forum_unit u on d.unit_id = u.unit_id
+    </sql>
+
+    <select id="selectForumDepartmentList" parameterType="ForumDepartment" resultMap="ForumDepartmentResult">
+        <include refid="selectForumDepartmentVo"/>
+        <where>
+            <if test="unitId != null">
+                AND d.unit_id = #{unitId}
+            </if>
+            <if test="deptName != null and deptName != ''">
+                AND d.dept_name like concat('%', #{deptName}, '%')
+            </if>
+        </where>
+        order by d.dept_id asc
+    </select>
+
+    <select id="selectForumDepartmentById" parameterType="Long" resultMap="ForumDepartmentResult">
+        <include refid="selectForumDepartmentVo"/>
+        where d.dept_id = #{deptId}
+    </select>
+
+    <select id="selectByUnitAndName" resultMap="ForumDepartmentResult">
+        <include refid="selectForumDepartmentVo"/>
+        where d.unit_id = #{unitId} and d.dept_name = #{deptName}
+    </select>
+
+    <select id="selectDepartmentsByUnitId" parameterType="Long" resultMap="ForumDepartmentResult">
+        <include refid="selectForumDepartmentVo"/>
+        where d.unit_id = #{unitId}
+        order by d.dept_name asc
+    </select>
+
+    <insert id="insertForumDepartment" parameterType="ForumDepartment" useGeneratedKeys="true" keyProperty="deptId">
+        insert into forum_department (
+            unit_id,
+            dept_name,
+            create_time
+        ) values (
+            #{unitId},
+            #{deptName},
+            sysdate()
+        )
+    </insert>
+
+    <update id="updateForumDepartment" parameterType="ForumDepartment">
+        update forum_department
+        <set>
+            <if test="unitId != null">unit_id = #{unitId},</if>
+            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
+            update_time = sysdate()
+        </set>
+        where dept_id = #{deptId}
+    </update>
+
+    <delete id="deleteForumDepartmentById" parameterType="Long">
+        delete from forum_department where dept_id = #{deptId}
+    </delete>
+</mapper>

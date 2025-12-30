@@ -144,10 +144,22 @@ public class MobilePostController extends BaseController {
         post.setVideoUrl(videoUrl);
         post.setCategoryId(request.getCategoryId());
 
+        // 检查用户是否被限流，自动标记帖子
+        boolean isAutoRestricted = false;
+        if ("1".equals(user.getIsRateLimited())) {
+            post.setIsRestricted("1");
+            isAutoRestricted = true;
+        }
+
         int result = forumPostService.insertForumPost(post);
         if (result > 0) {
             // 记录发帖日志
             forumPostLogService.logAction(post.getPostId(), "create", null, user.getNickname(), "用户发布帖子");
+
+            // 如果是自动限流，记录限流日志
+            if (isAutoRestricted) {
+                forumPostLogService.logAction(post.getPostId(), "限流", null, "admin", "因用户当前处于限流状态，帖子自动限流");
+            }
         }
         return toAjax(result);
     }
@@ -209,7 +221,7 @@ public class MobilePostController extends BaseController {
     }
 
     /**
-     * 删除帖子 (作者或管理员可删除)
+     * 删除帖子 (作者、管理员、分级管理员可删除)
      */
     @PostMapping("/delete")
     public AjaxResult deletePost(@RequestBody DeletePostRequest request) {
@@ -223,18 +235,24 @@ public class MobilePostController extends BaseController {
             return error("帖子不存在");
         }
 
-        // 权限检查: 作者或管理员可删除
+        // 权限检查
         boolean isAuthor = user.getUserId().equals(post.getUserId());
-        boolean isAdmin = "1".equals(user.getIsAdmin());
+        boolean isAdmin = "admin".equals(user.getRole()) || "1".equals(user.getIsAdmin());
+        boolean isSubAdmin = "sub_admin".equals(user.getRole());
 
-        if (!isAuthor && !isAdmin) {
+        // 分级管理员只能删除本单位帖子
+        boolean canSubAdminDelete = isSubAdmin && user.getUnit() != null && user.getUnit().equals(post.getUserUnit());
+
+        if (!isAuthor && !isAdmin && !canSubAdminDelete) {
             return error("您没有权限删除此帖子");
         }
 
         int result = forumPostService.deleteForumPostById(request.getPostId());
         if (result > 0) {
-            // 记录删帖日志
-            forumPostLogService.logAction(request.getPostId(), "delete", null, user.getNickname(), "帖子被删除");
+            // 记录删帖日志，区分操作人角色
+            String operatorRole = isAdmin ? "管理员" : (canSubAdminDelete ? "分级管理员" : "作者");
+            forumPostLogService.logAction(request.getPostId(), "delete", null, user.getNickname(),
+                    operatorRole + "删除帖子");
         }
         return toAjax(result);
     }

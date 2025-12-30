@@ -20,6 +20,11 @@ public interface ForumUserMapper {
     public ForumUser selectForumUserByWxUserid(String wxUserid);
 
     /**
+     * 根据昵称查询用户
+     */
+    public ForumUser selectForumUserByNickname(String nickname);
+
+    /**
      * 查询论坛用户列表
      */
     public List<ForumUser> selectForumUserList(ForumUser forumUser);

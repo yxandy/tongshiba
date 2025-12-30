@@ -37,6 +37,10 @@ public class ForumComment extends BaseEntity {
     /** 删除标志（0存在 1删除） */
     private String delFlag;
 
+    /** 是否限流评论（0否 1是） */
+    @Excel(name = "是否限流", readConverterExp = "0=否,1=是")
+    private String isRateLimited;
+
     /** 删除者用户ID */
     private Long deletedBy;
 
@@ -105,6 +109,14 @@ public class ForumComment extends BaseEntity {
 
     public void setDelFlag(String delFlag) {
         this.delFlag = delFlag;
+    }
+
+    public String getIsRateLimited() {
+        return isRateLimited;
+    }
+
+    public void setIsRateLimited(String isRateLimited) {
+        this.isRateLimited = isRateLimited;
     }
 
     public Long getDeletedBy() {

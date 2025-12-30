@@ -11,6 +11,7 @@
         <result property="content" column="content" />
         <result property="floorNum" column="floor_num" />
         <result property="delFlag" column="del_flag" />
+        <result property="isRateLimited" column="is_rate_limited" />
         <result property="createTime" column="create_time" />
     </resultMap>
 
@@ -25,12 +26,12 @@
     </resultMap>
 
     <sql id="selectForumCommentVo">
-        select comment_id, post_id, user_id, user_unit, user_dept, content, floor_num, del_flag, create_time
+        select comment_id, post_id, user_id, user_unit, user_dept, content, floor_num, del_flag, is_rate_limited, create_time
         from forum_comment
     </sql>
 
     <sql id="selectForumCommentWithUser">
-        select c.comment_id, c.post_id, c.user_id, c.user_unit, c.user_dept, c.content, c.floor_num, c.del_flag, c.create_time,
+        select c.comment_id, c.post_id, c.user_id, c.user_unit, c.user_dept, c.content, c.floor_num, c.del_flag, c.is_rate_limited, c.create_time,
                u.user_id as u_user_id, u.wx_userid as u_wx_userid, u.nickname as u_nickname, u.avatar as u_avatar, u.department as u_department
         from forum_comment c
         left join forum_user u on c.user_id = u.user_id
@@ -85,6 +86,7 @@
             <if test="userDept != null">user_dept,</if>
             <if test="content != null and content != ''">content,</if>
             <if test="floorNum != null">floor_num,</if>
+            <if test="isRateLimited != null">is_rate_limited,</if>
             del_flag,
             create_time
         </trim>
@@ -95,6 +97,7 @@
             <if test="userDept != null">#{userDept},</if>
             <if test="content != null and content != ''">#{content},</if>
             <if test="floorNum != null">#{floorNum},</if>
+            <if test="isRateLimited != null">#{isRateLimited},</if>
             '0',
             sysdate()
         </trim>

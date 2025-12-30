@@ -47,6 +47,14 @@ public class ForumUser extends BaseEntity {
     @Excel(name = "是否管理员", readConverterExp = "0=否,1=是")
     private String isAdmin;
 
+    /** 角色（admin-管理员, sub_admin-分级管理员, user-普通用户） */
+    @Excel(name = "角色", readConverterExp = "admin=管理员,sub_admin=分级管理员,user=普通用户")
+    private String role;
+
+    /** 是否限流（0否 1是） */
+    @Excel(name = "是否限流", readConverterExp = "0=否,1=是")
+    private String isRateLimited;
+
     public Long getUserId() {
         return userId;
     }
@@ -117,6 +125,22 @@ public class ForumUser extends BaseEntity {
 
     public void setIsAdmin(String isAdmin) {
         this.isAdmin = isAdmin;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getIsRateLimited() {
+        return isRateLimited;
+    }
+
+    public void setIsRateLimited(String isRateLimited) {
+        this.isRateLimited = isRateLimited;
     }
 
     @Override

@@ -38,12 +38,22 @@ public class MobileCommentController extends BaseController {
     private IForumCommentLogService forumCommentLogService;
 
     /**
-     * 获取帖子评论列表
+     * 获取帖子评论列表（支持限流过滤）
      */
     @GetMapping("/list/{postId}")
-    public TableDataInfo listComments(@PathVariable Long postId) {
+    public TableDataInfo listComments(@PathVariable Long postId, @RequestParam(required = false) String wxUserid) {
         startPage();
-        List<ForumComment> list = forumCommentService.selectForumCommentByPostId(postId);
+
+        // 获取当前用户 ID（用于限流评论过滤）
+        Long currentUserId = null;
+        if (wxUserid != null && !wxUserid.isEmpty()) {
+            ForumUser user = forumUserService.selectForumUserByWxUserid(wxUserid);
+            if (user != null) {
+                currentUserId = user.getUserId();
+            }
+        }
+
+        List<ForumComment> list = forumCommentService.selectForumCommentByPostIdWithFilter(postId, currentUserId);
         return getDataTable(list);
     }
 
@@ -77,11 +87,16 @@ public class MobileCommentController extends BaseController {
         comment.setUserDept(request.getUserDept());
         comment.setContent(request.getContent());
 
+        // 检查用户是否被限流，自动标记评论
+        if ("1".equals(user.getIsRateLimited())) {
+            comment.setIsRateLimited("1");
+        }
+
         return toAjax(forumCommentService.insertForumComment(comment));
     }
 
     /**
-     * 删除评论 (评论作者或管理员可删除)
+     * 删除评论 (评论作者、管理员、分级管理员可删除)
      */
     @PostMapping("/delete")
     public AjaxResult deleteComment(@RequestBody CommentDeleteRequest request) {
@@ -95,11 +110,16 @@ public class MobileCommentController extends BaseController {
             return error("评论不存在");
         }
 
-        // 权限检查: 评论作者或管理员可删除
+        // 权限检查
         boolean isAuthor = user.getUserId().equals(comment.getUserId());
-        boolean isAdmin = "1".equals(user.getIsAdmin());
+        boolean isAdmin = "admin".equals(user.getRole()) || "1".equals(user.getIsAdmin());
+        boolean isSubAdmin = "sub_admin".equals(user.getRole());
 
-        if (!isAuthor && !isAdmin) {
+        // 分级管理员只能删除本单位评论
+        boolean canSubAdminDelete = isSubAdmin && user.getUnit() != null
+                && user.getUnit().equals(comment.getUserUnit());
+
+        if (!isAuthor && !isAdmin && !canSubAdminDelete) {
             return error("您没有权限删除此评论");
         }
 

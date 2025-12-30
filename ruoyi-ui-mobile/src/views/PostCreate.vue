@@ -652,8 +652,9 @@ async function handleImageSelect(event) {
     try {
       let fileToUpload = file
       
-      // 大于 500KB 的图片进行压缩
-      if (file.size > COMPRESS_THRESHOLD) {
+      // 大于 500KB 的图片进行压缩（动图 GIF 除外，因为 Canvas 压缩会导致动图变静图）
+      const isGif = file.type === 'image/gif'
+      if (file.size > COMPRESS_THRESHOLD && !isGif) {
         fileToUpload = await compressImageToBlob(file)
       }
       

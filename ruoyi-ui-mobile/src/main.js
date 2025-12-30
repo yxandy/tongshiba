@@ -40,7 +40,16 @@ const router = createRouter({
     history: createWebHistory('/tongshiba/'),
     routes,
     scrollBehavior(to, from, savedPosition) {
-        // 始终滚动到顶部
+        // PostList 页面使用 keep-alive 缓存，不需要 vue-router 控制滚动
+        // 因为它有自己的自定义滚动容器
+        if (to.name === 'PostList') {
+            return false // 不做任何滚动操作
+        }
+        // 如果有保存的位置（如浏览器返回），恢复该位置
+        if (savedPosition) {
+            return savedPosition
+        }
+        // 否则滚动到顶部
         return { top: 0 }
     }
 })

@@ -788,8 +788,13 @@ async function submitPost() {
     // 等待一下让用户看到成功提示
     setTimeout(() => {
       if (isEditMode.value) {
+        // 编辑成功后返回帖子详情页，列表不需要刷新
         router.replace(`/post/${postId.value}`)
       } else {
+        // 发布成功后返回列表页，需要刷新以显示新帖子
+        if (typeof window.__postListNeedRefresh === 'function') {
+          window.__postListNeedRefresh()
+        }
         router.replace('/posts')
       }
     }, 500)

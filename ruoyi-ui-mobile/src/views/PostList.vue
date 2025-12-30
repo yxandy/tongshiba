@@ -92,8 +92,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onActivated, watch, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+defineOptions({ name: 'PostList' })
+
+import { ref, onMounted, onActivated, onDeactivated, watch, nextTick } from 'vue'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { getPostList, syncUser, getCategoryList } from '@/api/forum'
 import { isWxWorkEnv, getAccessDeniedMessage, getMockUser, loginWithWxWork } from '@/utils/wxwork'
 import PostItem from '@/components/PostItem.vue'
@@ -171,19 +173,50 @@ onMounted(async () => {
   }
 })
 
-// 从其他页面返回时刷新列表（keep-alive 激活）
-onActivated(() => {
-  // 滚动到顶部
+// 用于判断是否需要刷新列表（发帖/编辑后返回需要刷新）
+const needRefreshOnActivate = ref(false)
+
+// 保存的滚动位置
+let savedScrollTop = 0
+
+// 离开页面前保存滚动位置（在路由切换前触发，此时元素尚未隐藏）
+onBeforeRouteLeave((to, from, next) => {
   if (scrollContainer.value) {
-    scrollContainer.value.scrollTop = 0
+    savedScrollTop = scrollContainer.value.scrollTop
   }
-  
-  // 重置为第一页并刷新
-  postList.value = []
-  pageNum.value = 1
-  finished.value = false
-  loadMore()
+  next()
 })
+
+// 从其他页面返回时（keep-alive 激活）
+onActivated(() => {
+  // 只有从发帖/编辑页面返回时才刷新列表
+  if (needRefreshOnActivate.value) {
+    // 重置滚动位置并刷新
+    savedScrollTop = 0
+    if (scrollContainer.value) {
+      scrollContainer.value.scrollTop = 0
+    }
+    // 重置为第一页并刷新
+    postList.value = []
+    pageNum.value = 1
+    finished.value = false
+    loadMore()
+    // 重置标记
+    needRefreshOnActivate.value = false
+  } else {
+    // 从帖子详情返回时，恢复滚动位置
+    nextTick(() => {
+      if (scrollContainer.value && savedScrollTop > 0) {
+        scrollContainer.value.scrollTop = savedScrollTop
+      }
+    })
+  }
+})
+
+// 暴露刷新标记，供其他页面调用
+window.__postListNeedRefresh = () => {
+  needRefreshOnActivate.value = true
+}
 
 // 初始化用户
 async function initUser() {

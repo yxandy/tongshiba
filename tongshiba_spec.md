@@ -1,4 +1,4 @@
-﻿# 同事吧功能说明文档
+﻿# 同事吧（新）功能说明文档
 
 ## 1. 文档说明
 
@@ -411,6 +411,10 @@
 - 接口调用：
   - 大图压缩后上传：`POST /mobile/forum/post/upload/image`
 - 数据库变化：无（图片仅上传文件，未写帖子表）。
+- **图片限制**：
+  - 单次最多可选 **20 张图片**
+  - 单张图片最大 **10MB**
+  - 支持格式：`bmp`, `gif`, `jpg`, `jpeg`, `png`
 
 8) 图片压缩规则
 - 大于阈值（约 500KB）的静态图片：压缩后上传。
@@ -427,7 +431,9 @@
 - 数据库变化：无。
 
 10) 点击发送（新建）
-- 页面变化：显示上传进度遮罩；成功后提示并返回列表，同时清理草稿箱。
+- 页面变化：显示上传进度遮罩；成功后提示并返回列表。
+  - 返回列表后会**刷新列表并滚动到顶部**（确保用户看到新发的帖子）。
+  - 同时清理草稿箱。
 - 校验规则：
   - 分类必选
   - 标题必填
@@ -619,13 +625,13 @@
 1) 进入页面
 - 页面变化：加载并显示当前用户发过的帖子列表。
 - 接口调用：
-  - `GET /mobile/forum/post/my/{userId}?pageNum=1&pageSize=20`（前端从 localStorage 取 `userId`）
+  - `GET /mobile/forum/post/my?wxUserid=xxx&pageNum=1&pageSize=20`（前端从 localStorage 取 `wxUserid`）
 - 数据库变化：无。
 
 2) 上拉加载更多
 - 页面变化：列表追加下一页数据。
 - 接口调用：
-  - `GET /mobile/forum/post/my/{userId}?pageNum=N&pageSize=20`
+  - `GET /mobile/forum/post/my?wxUserid=xxx&pageNum=N&pageSize=20`
 - 数据库变化：无。
 
 3) 点击帖子卡片
@@ -638,7 +644,7 @@
 - 触发方式：左滑返回或企业微信返回按钮。
 - 数据变化：本地保存滚动位置（内存状态），不写库。
 **异常与边界**
-- localStorage 无 `userId`：不请求接口，直接显示空状态。
+- localStorage 无 `wxUserid`：不请求接口，直接显示空状态。
 - 接口失败：显示空列表或保持失败状态。
 
 ### 3.8 关注的帖子
@@ -1163,6 +1169,7 @@
 **移动端帖子**
 - `GET /mobile/forum/post/list`：帖子列表
 - `GET /mobile/forum/post/{postId}`：帖子详情
+- `GET /mobile/forum/post/my`：我发过的帖子列表（带 wxUserid）
 - `POST /mobile/forum/post`：发布帖子
 - `PUT /mobile/forum/post`：编辑帖子
 - `POST /mobile/forum/post/delete`：删除帖子
@@ -1226,3 +1233,21 @@
 - `POST /forum/statistics/export/unit`：导出单位统计
 - `POST /forum/statistics/export/dept`：导出部门统计
 - `POST /forum/statistics/export/user`：导出人员统计
+
+## 6. 待办与规划功能
+
+### 6.1 置顶类型细分
+- **当前状态**：置顶帖在所有分类视图（包括"全部"）都显示在顶部。
+- **规划功能**：
+  - **全区置顶**（`is_pinned=2`）：所有分类都显示在顶部
+  - **分类置顶**（`is_pinned=1`）：仅在所属分类显示在顶部，"全部"分类按正常排序
+- **实现状态**：未实现
+
+### 6.2 用户体系打通
+- **当前状态**：论坛用户（`forum_user`）与后台用户（`sys_user`）完全独立，论坛管理员无法登录后台。
+- **规划功能**：论坛管理员（admin/sub_admin）可登录后台管理系统
+- **可选方案**：
+  - 方案 A：手动在后台为管理员创建 `sys_user` 账号
+  - 方案 B：设置管理员角色时自动创建后台账号
+  - 方案 C：后台支持企业微信 OAuth 登录
+- **实现状态**：未实现
